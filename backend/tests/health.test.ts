@@ -27,12 +27,12 @@ describe("Phase 0 Baseline Tests", () => {
 
   after(async () => {
     if (server) {
+      if (typeof (server as any).closeAllConnections === "function") {
+        (server as any).closeAllConnections();
+      }
       await new Promise<void>((resolve, reject) => {
         server.close((err) => (err ? reject(err) : resolve()));
       });
-    }
-    if (AppDataSource.isInitialized) {
-      await AppDataSource.destroy();
     }
   });
 

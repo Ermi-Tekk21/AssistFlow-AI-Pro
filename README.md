@@ -94,3 +94,90 @@ Health check verification:
 curl http://localhost:3000/health
 # {"status":"ok","service":"AssistFlow AI"}
 ```
+
+---
+
+## Task Management API (Phase 1)
+
+All endpoints under `/api/tasks` require user authentication passed via the `x-user-id` header (or `Authorization: Bearer <user_id>`).
+
+### Endpoints Overview
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/tasks` | Create a new task |
+| `GET` | `/api/tasks` | List/filter tasks with deterministic ordering |
+| `GET` | `/api/tasks/:id` | Retrieve task details by ID |
+| `PATCH` | `/api/tasks/:id` | Update task fields (title, description, priority, dueAt, status) |
+| `POST` | `/api/tasks/:id/complete` | Mark task as completed |
+| `DELETE` | `/api/tasks/:id` | Delete task |
+
+### API Usage Examples
+
+#### 1. Create a Task
+```bash
+curl -X POST http://localhost:3000/api/tasks \
+  -H "Content-Type: application/json" \
+  -H "x-user-id: 32628984-366b-4c22-8995-3222734d51bf" \
+  -d '{
+    "title": "Prepare quarterly budget report",
+    "description": "Consolidate expense sheets from finance",
+    "priority": "high",
+    "dueAt": "2026-11-15T18:00:00.000Z"
+  }'
+```
+
+Response (`201 Created`):
+```json
+{
+  "data": {
+    "id": "e2d9787e-34d0-44c5-b644-2e783365b6d4",
+    "userId": "32628984-366b-4c22-8995-3222734d51bf",
+    "title": "Prepare quarterly budget report",
+    "description": "Consolidate expense sheets from finance",
+    "priority": "high",
+    "status": "pending",
+    "dueAt": "2026-11-15T18:00:00.000Z",
+    "completedAt": null,
+    "createdAt": "2026-11-01T14:14:00.000Z",
+    "updatedAt": "2026-11-01T14:14:00.000Z"
+  }
+}
+```
+
+#### 2. List & Filter Tasks
+```bash
+curl -X GET "http://localhost:3000/api/tasks?status=pending&priority=high&sortBy=dueAt&sortOrder=ASC&limit=10" \
+  -H "x-user-id: 32628984-366b-4c22-8995-3222734d51bf"
+```
+
+Response (`200 OK`):
+```json
+{
+  "data": [ ... ],
+  "meta": {
+    "total": 1,
+    "limit": 10,
+    "offset": 0
+  }
+}
+```
+
+#### 3. Mark Task as Completed
+```bash
+curl -X POST http://localhost:3000/api/tasks/e2d9787e-34d0-44c5-b644-2e783365b6d4/complete \
+  -H "x-user-id: 32628984-366b-4c22-8995-3222734d51bf"
+```
+
+Response (`200 OK`):
+```json
+{
+  "data": {
+    "id": "e2d9787e-34d0-44c5-b644-2e783365b6d4",
+    "status": "completed",
+    "completedAt": "2026-11-01T14:15:30.000Z",
+    ...
+  }
+}
+```
+
