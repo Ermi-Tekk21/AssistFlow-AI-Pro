@@ -1,4 +1,5 @@
 import "reflect-metadata";
+import "./env";
 
 import { DataSource } from "typeorm";
 
@@ -18,7 +19,7 @@ export const AppDataSource = new DataSource({
 
   entities: [User, Task, Reminder, CalendarEvent],
 
-  migrations: [__dirname + "/../migrations/*{.ts,.js}"],
+  migrations: [__dirname + "/../../migrations/*{.ts,.js}"],
 
   synchronize: false,
 

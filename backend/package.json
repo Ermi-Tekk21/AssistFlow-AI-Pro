@@ -5,10 +5,15 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
-    "build": "tsc"
+    "build": "tsc",
+    "test": "tsx --test $(find tests -name '*.test.ts')",
+    "typeorm": "tsx ./node_modules/typeorm/cli.js -d src/config/database.ts",
+    "migration:run": "npm run typeorm migration:run",
+    "migration:revert": "npm run typeorm migration:revert",
+    "migration:show": "npm run typeorm migration:show"
   },
   "keywords": [],
-  "author": "",
+  "author": "ermiasteklemarkos@gmail.com",
   "license": "ISC",
   "description": "",
   "dependencies": {
