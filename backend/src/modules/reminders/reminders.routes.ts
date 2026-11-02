@@ -1,10 +1,23 @@
 import { Router } from "express";
 import { authenticate } from "../../middleware/auth";
+import { authenticateWorkflow } from "../../middleware/workflowAuth";
 import { remindersController } from "./reminders.controller";
+import { remindersDeliveryService } from "./remindersDelivery.service";
 
 export const remindersRouter = Router();
 
-// Enforce authentication on all reminder routes
+// Protected workflow endpoint for n8n / scheduled orchestrator
+remindersRouter.post("/process-due", authenticateWorkflow, async (req, res, next) => {
+  try {
+    const limit = req.body?.limit ? Number(req.body.limit) : 50;
+    const result = await remindersDeliveryService.processDueReminders({ limit });
+    res.status(200).json({ data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Enforce user authentication on all user-facing reminder routes
 remindersRouter.use(authenticate);
 
 remindersRouter.post("/", (req, res, next) => remindersController.create(req, res, next));

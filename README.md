@@ -299,5 +299,70 @@ curl -X POST http://localhost:3000/api/confirmations/reply \
   }'
 ```
 
+---
+
+## Telegram Integration & Reminder Delivery (Phase 4)
+
+Phase 4 introduces scheduled reminder dispatch to Telegram with delivery attempt tracking, bounded retries, and strict secret protection.
+
+### Configuration & Bot Setup
+
+1. **Create Telegram Bot**: Use `@BotFather` on Telegram to create your bot and obtain a Bot Token.
+2. **Find Your Chat ID**: Send `/start` to your bot, then send a message to `@userinfobot` to retrieve your personal numeric Telegram Chat ID.
+3. **Configure Environment Variables** in `backend/.env`:
+   ```bash
+   TELEGRAM_BOT_TOKEN=your_bot_token_here
+   TELEGRAM_CHAT_ID=your_chat_id_here
+   N8N_WORKFLOW_SECRET=your_workflow_secret_here
+   ```
+   > [!IMPORTANT]
+   > Never commit `.env` or print tokens in log files. All Telegram errors are automatically sanitized by replacing tokens with `[REDACTED_BOT_TOKEN]`.
+
+### Workflow Endpoint
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/reminders/process-due` | Protected endpoint for n8n/cron to claim and deliver due reminders |
+
+#### Authentication
+The endpoint requires the header `x-workflow-secret: <N8N_WORKFLOW_SECRET>` or `Authorization: Bearer <N8N_WORKFLOW_SECRET>`.
+
+#### Example Request
+```bash
+curl -X POST http://localhost:3000/api/reminders/process-due \
+  -H "Content-Type: application/json" \
+  -H "x-workflow-secret: your_workflow_secret_here" \
+  -d '{
+    "limit": 50
+  }'
+```
+
+Response (`200 OK`):
+```json
+{
+  "data": {
+    "claimedCount": 1,
+    "sentCount": 1,
+    "failedCount": 0,
+    "skippedCount": 0,
+    "details": [
+      {
+        "reminderId": "91f93ee9-d0a6-4a1f-acf1-f945283b45e8",
+        "status": "sent",
+        "messageId": "12345"
+      }
+    ]
+  }
+}
+```
+
+### Delivery Guarantees & Resilience
+
+1. **Atomic Claim (`FOR UPDATE SKIP LOCKED`)**: Concurrent executions skip claimed rows, preventing duplicate notifications.
+2. **Immediate Recheck**: The runner rechecks reminder status immediately before dispatch. Cancelled or rescheduled reminders are aborted.
+3. **Bounded Retries with Backoff**: Failed sends are retried up to 3 times with progressive backoff delays (2 mins * attempt). Reminders that exceed 3 failed attempts are marked `failed` permanently.
+4. **Audit Trail**: Every send attempt is recorded in PostgreSQL table `notification_attempts` with status, timestamp, attempt number, and Telegram provider message ID.
+
+
 
 
