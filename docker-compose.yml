@@ -35,6 +35,8 @@ services:
     environment:
       TZ: Africa/Addis_Ababa
       GENERIC_TIMEZONE: Africa/Addis_Ababa
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - n8n_data:/home/node/.n8n
 

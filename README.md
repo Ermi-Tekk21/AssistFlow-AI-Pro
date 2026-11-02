@@ -299,5 +299,126 @@ curl -X POST http://localhost:3000/api/confirmations/reply \
   }'
 ```
 
+---
+
+## Telegram Integration & Reminder Delivery (Phase 4)
+
+Phase 4 introduces scheduled reminder dispatch to Telegram with delivery attempt tracking, bounded retries, and strict secret protection.
+
+### Configuration & Bot Setup
+
+1. **Create Telegram Bot**: Use `@BotFather` on Telegram to create your bot and obtain a Bot Token.
+2. **Find Your Chat ID**: Send `/start` to your bot, then send a message to `@userinfobot` to retrieve your personal numeric Telegram Chat ID.
+3. **Configure Environment Variables** in `backend/.env`:
+   ```bash
+   TELEGRAM_BOT_TOKEN=your_bot_token_here
+   TELEGRAM_CHAT_ID=your_chat_id_here
+   N8N_WORKFLOW_SECRET=your_workflow_secret_here
+   ```
+   > [!IMPORTANT]
+   > Never commit `.env` or print tokens in log files. All Telegram errors are automatically sanitized by replacing tokens with `[REDACTED_BOT_TOKEN]`.
+
+### Workflow Endpoint
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/reminders/process-due` | Protected endpoint for n8n/cron to claim and deliver due reminders |
+
+#### Authentication
+The endpoint requires the header `x-workflow-secret: <N8N_WORKFLOW_SECRET>` or `Authorization: Bearer <N8N_WORKFLOW_SECRET>`.
+
+#### Example Request
+```bash
+curl -X POST http://localhost:3000/api/reminders/process-due \
+  -H "Content-Type: application/json" \
+  -H "x-workflow-secret: your_workflow_secret_here" \
+  -d '{
+    "limit": 50
+  }'
+```
+
+Response (`200 OK`):
+```json
+{
+  "data": {
+    "claimedCount": 1,
+    "sentCount": 1,
+    "failedCount": 0,
+    "skippedCount": 0,
+    "details": [
+      {
+        "reminderId": "91f93ee9-d0a6-4a1f-acf1-f945283b45e8",
+        "status": "sent",
+        "messageId": "12345"
+      }
+    ]
+  }
+}
+```
+
+### Delivery Guarantees & Resilience
+
+1. **Atomic Claim (`FOR UPDATE SKIP LOCKED`)**: Concurrent executions skip claimed rows, preventing duplicate notifications.
+2. **Immediate Recheck**: The runner rechecks reminder status immediately before dispatch. Cancelled or rescheduled reminders are aborted.
+3. **Bounded Retries with Backoff**: Failed sends are retried up to 3 times with progressive backoff delays (2 mins * attempt). Reminders that exceed 3 failed attempts are marked `failed` permanently.
+4. **Audit Trail**: Every send attempt is recorded in PostgreSQL table `notification_attempts` with status, timestamp, attempt number, and Telegram provider message ID.
+
+---
+
+## Scheduled Workflows via n8n (Phase 5)
+
+Phase 5 introduces scheduled workflow orchestration via n8n, exposing secured backend trigger endpoints with full execution auditing in the `workflow_executions` table.
+
+### Architecture & Security
+
+- **n8n Container**: Managed via `docker-compose.yml` on port `5678`. Configured with `extra_hosts: host.docker.internal:host-gateway` to communicate with the host Express backend at `http://host.docker.internal:3000`.
+- **Secret Authentication**: All `/api/workflows/*` endpoints enforce `x-workflow-secret: <N8N_WORKFLOW_SECRET>` or `Authorization: Bearer <N8N_WORKFLOW_SECRET>`.
+- **Audit Logging**: Every workflow execution is recorded in PostgreSQL `workflow_executions` with execution status (`running`, `completed`, `failed`), start time, finish time, trigger source, and JSON results/error details.
+
+### Workflow Endpoints
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/workflows/reminders/delivery` | Trigger reminder delivery run with execution tracking |
+| `POST` | `/api/workflows/briefing/trigger` | Trigger daily briefing compilation for eligible users |
+| `GET` | `/api/workflows/executions` | List recent workflow execution audit logs |
+
+#### 1. Trigger Reminder Delivery
+```bash
+curl -X POST http://localhost:3000/api/workflows/reminders/delivery \
+  -H "Content-Type: application/json" \
+  -H "x-workflow-secret: your_n8n_secret_token_here" \
+  -d '{ "triggeredBy": "n8n_cron" }'
+```
+
+#### 2. Trigger Daily Briefing
+```bash
+curl -X POST http://localhost:3000/api/workflows/briefing/trigger \
+  -H "Content-Type: application/json" \
+  -H "x-workflow-secret: your_n8n_secret_token_here" \
+  -d '{ "triggeredBy": "n8n_hourly" }'
+```
+
+#### 3. View Workflow Execution History
+```bash
+curl -X GET http://localhost:3000/api/workflows/executions \
+  -H "x-workflow-secret: your_n8n_secret_token_here"
+```
+
+### Pre-Built n8n Workflows
+
+Workflow JSON files are located in `automation/workflows/`:
+- `reminder-delivery.json`: Scheduled trigger every 1 minute calling `POST /api/workflows/reminders/delivery`.
+- `daily-briefing.json`: Scheduled trigger hourly calling `POST /api/workflows/briefing/trigger`.
+
+#### Importing Workflows into n8n:
+1. Open n8n in your browser at [http://localhost:5678](http://localhost:5678).
+2. Set up owner account credentials if launching for the first time.
+3. In the Workflows menu, click **Add Workflow** -> **Import from File...** and select `automation/workflows/reminder-delivery.json` and `automation/workflows/daily-briefing.json`.
+4. Ensure the `x-workflow-secret` header in the HTTP Request node matches your `N8N_WORKFLOW_SECRET` in `.env`.
+5. Toggle the workflows to **Active**.
+
+
+
 
 
