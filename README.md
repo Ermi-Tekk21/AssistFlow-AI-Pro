@@ -95,6 +95,23 @@ curl http://localhost:3000/health
 # {"status":"ok","service":"AssistFlow AI"}
 ```
 
+### 6. Run React Frontend (Phase 9)
+
+In a separate terminal:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Open http://localhost:5173 to interact with AssistFlow AI. Requests to `/api/*` are automatically proxied to the backend on `http://localhost:3000`.
+
+To create a production build:
+```bash
+cd frontend
+npm run build
+npm run preview
+```
+
 ---
 
 ## Task Management API (Phase 1)
@@ -632,6 +649,40 @@ Phase 8 introduces the automated morning executive briefing, aggregating tasks, 
 • [HIGH] <b>Quarterly Board Review</b> ⚠️ <b>(Overdue: 11:00 AM)</b>
 • [MED] <b>Update documentation</b>
 ```
+
+---
+
+## React Frontend Application (Phase 9)
+
+Phase 9 introduces the single-page application (SPA) built with **React 18 + TypeScript + Zustand + Tailwind CSS + shadcn/ui style components**. The UI features a clean, human-crafted slate/zinc aesthetic without distracting animations or gradients.
+
+### Key Frontend Features
+
+1. **AI Chat Assistant Interface (`ChatView.tsx`)**:
+   - Conversational multi-turn session with Gemini natural language understanding.
+   - Quick-start prompt chips for common executive workflows (e.g., *"Schedule team sync tomorrow at 3pm"*, *"Remind me to call John in 2 hours"*).
+   - Typing indicator and resilient error states.
+2. **Strict Confirmation Workflow (`PendingActionCard.tsx`)**:
+   - Action proposals (task creation, meeting scheduling, cancellations) require explicit user approval.
+   - Displays real-time pending action banners with one-click **"Confirm & Execute"** and **"Cancel"** actions.
+3. **Tasks Management (`TasksView.tsx`)**:
+   - Filterable task views (`All`, `Pending`, `Completed`).
+   - Inline task creation with title, description, priority selector (`low`, `medium`, `high`), and due date picker.
+   - Instant toggle completion and task deletion.
+4. **Reminders Agenda (`RemindersView.tsx`)**:
+   - Real-time status badges (`scheduled`, `sent`, `cancelled`).
+   - Shows associated tasks or calendar meetings, human-readable scheduled trigger dates, and one-click cancellation.
+5. **Calendar & Google Meet (`CalendarView.tsx`)**:
+   - Chronological agenda of meetings.
+   - Attendee list display and direct **"Join Google Meet"** video conferencing links.
+   - Meeting cancellation with confirmation.
+6. **Executive Morning Briefing Preview (`BriefingView.tsx`)**:
+   - Metrics summary card showing today's meeting count, pending tasks count, and reminder count.
+   - Live Telegram HTML formatted message preview.
+   - One-click **"Send to Telegram Now"** button for immediate dispatch.
+7. **Multi-User Context Switcher (`Header.tsx`)**:
+   - Quick switcher between demo user accounts or custom UUID entry with live state synchronization.
+
 
 
 

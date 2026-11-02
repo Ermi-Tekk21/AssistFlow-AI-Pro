@@ -12,6 +12,7 @@ import {
   DailyBriefingStatus,
 } from "../src/entities/DailyBriefingRecord";
 import { telegramClient } from "../src/modules/integrations/telegram/telegram.client";
+import { briefingService } from "../src/modules/briefing/briefing.service";
 
 describe("Phase 8 Daily Briefing Tests", () => {
   let server: Server;
@@ -170,6 +171,11 @@ describe("Phase 8 Daily Briefing Tests", () => {
       const eventRepo = AppDataSource.getRepository(CalendarEvent);
 
       const now = new Date();
+      const { startUtc } = briefingService.getLocalDayBounds(userA.timezone, now);
+      const reminderTime = new Date(startUtc.getTime() + 10 * 60 * 60 * 1000); // 10:00 AM local today
+      const eventStartTime = new Date(startUtc.getTime() + 14 * 60 * 60 * 1000); // 02:00 PM local today
+      const eventEndTime = new Date(startUtc.getTime() + 15 * 60 * 60 * 1000); // 03:00 PM local today
+      const overdueTime = new Date(startUtc.getTime() - 2 * 60 * 60 * 1000); // 2 hours before today started
 
       // 1. High priority task & overdue task
       await taskRepo.save([
@@ -178,7 +184,7 @@ describe("Phase 8 Daily Briefing Tests", () => {
           title: "Quarterly Board Review",
           priority: TaskPriority.HIGH,
           status: TaskStatus.PENDING,
-          dueAt: new Date(now.getTime() - 2 * 60 * 60 * 1000), // Overdue by 2 hours
+          dueAt: overdueTime,
         }),
         taskRepo.create({
           userId: userA.id,
@@ -193,7 +199,7 @@ describe("Phase 8 Daily Briefing Tests", () => {
         reminderRepo.create({
           userId: userA.id,
           title: "Submit team timesheets",
-          scheduledAt: new Date(now.getTime() + 1 * 60 * 60 * 1000),
+          scheduledAt: reminderTime,
           timezone: userA.timezone,
           status: ReminderStatus.SCHEDULED,
         })
@@ -206,8 +212,8 @@ describe("Phase 8 Daily Briefing Tests", () => {
           googleCalendarId: "primary",
           googleEventId: "google-sync-test-1",
           title: "Product Roadmap Sync",
-          startAt: new Date(now.getTime() + 3 * 60 * 60 * 1000),
-          endAt: new Date(now.getTime() + 4 * 60 * 60 * 1000),
+          startAt: eventStartTime,
+          endAt: eventEndTime,
           timezone: userA.timezone,
           meetUrl: "https://meet.google.com/xyz-uvwx-rst",
           status: CalendarEventStatus.CONFIRMED,
