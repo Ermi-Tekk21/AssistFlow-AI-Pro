@@ -513,6 +513,79 @@ Response (`200 OK`):
 }
 ```
 
+---
+
+## Google Calendar & Google Meet Integration (Phase 7)
+
+Phase 7 introduces Google Calendar synchronization, Google Meet link provisioning, and automated meeting reminder lifecycle management.
+
+### Architectural Rules & Guarantees
+
+1. **Google Calendar is Authoritative**: Events are created, patched, and deleted through the Google Calendar API first. If provider operations fail, local changes are aborted, preventing orphan or out-of-sync local records.
+2. **Automated 10-Minute Meeting Reminder Lifecycle**:
+   - **Creation**: When a calendar meeting is confirmed and saved, the backend automatically schedules a Telegram `Reminder` 10 minutes prior to `startAt`.
+   - **Reschedule**: When a meeting's `startAt` is updated, the linked reminder is automatically rescheduled to `newStartAt - 10 minutes`.
+   - **Cancellation**: When a meeting is cancelled, the linked reminder is automatically marked `status = 'cancelled'`.
+3. **Google Meet Integration**: Meeting creation requests automatically request video conference creation (`conferenceSolutionKey: { type: "hangoutsMeet" }`). Generated Google Meet URLs are persisted in `calendar_events.meet_url` and embedded in the Telegram reminder description.
+4. **Attendee Storage**: Meeting attendees are stored in `calendar_event_attendees` with their email and response status.
+
+### Endpoints Overview
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/calendar/events` | List calendar events with optional `startAfter`, `startBefore`, and `status` |
+| `GET` | `/api/calendar/events/:id` | Get calendar event details including attendees |
+| `POST` | `/api/calendar/events` | Create calendar event with Google Meet link & 10-minute reminder |
+| `PATCH` | `/api/calendar/events/:id` | Update meeting details/time and reschedule linked reminder |
+| `DELETE` | `/api/calendar/events/:id` | Cancel meeting on Google Calendar & cancel linked reminder |
+| `GET` | `/api/calendar/auth/url` | Retrieve Google OAuth consent URL |
+| `POST` | `/api/calendar/auth/connect` | Store/connect Google OAuth tokens for testing or deployment |
+
+All calendar endpoints require user authentication via `x-user-id: <user_uuid>` or `Authorization: Bearer <user_uuid>`.
+
+### Example: Create Calendar Event with Google Meet
+
+```bash
+curl -X POST http://localhost:3000/api/calendar/events \
+  -H "Content-Type: application/json" \
+  -H "x-user-id: 32628984-366b-4c22-8995-3222734d51bf" \
+  -d '{
+    "summary": "Q4 Strategy Sync",
+    "description": "Review milestones and OKRs with team",
+    "startAt": "2026-11-05T14:00:00.000Z",
+    "endAt": "2026-11-05T15:00:00.000Z",
+    "attendees": ["colleague@example.com"]
+  }'
+```
+
+Response (`201 Created`):
+```json
+{
+  "data": {
+    "event": {
+      "id": "e44d048b-3022-4467-96a2-cf95610817c7",
+      "googleCalendarId": "primary",
+      "googleEventId": "google-ev-1793622854091-130",
+      "title": "Q4 Strategy Sync",
+      "description": "Review milestones and OKRs with team",
+      "startAt": "2026-11-05T14:00:00.000Z",
+      "endAt": "2026-11-05T15:00:00.000Z",
+      "timezone": "Africa/Addis_Ababa",
+      "meetUrl": "https://meet.google.com/abc-defg-hij",
+      "status": "confirmed"
+    },
+    "reminder": {
+      "id": "d027a489-324c-473d-8698-c13f68448834",
+      "calendarEventId": "e44d048b-3022-4467-96a2-cf95610817c7",
+      "title": "Meeting: Q4 Strategy Sync",
+      "scheduledAt": "2026-11-05T13:50:00.000Z",
+      "status": "scheduled"
+    }
+  }
+}
+```
+
+
 
 
 

@@ -5,11 +5,13 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
   Index,
 } from "typeorm";
 
 import { User } from "./User";
+import { CalendarEventAttendee } from "./CalendarEventAttendee";
 
 export enum CalendarEventStatus {
   PENDING = "pending",
@@ -30,6 +32,9 @@ export class CalendarEvent {
   @ManyToOne(() => User, { onDelete: "CASCADE" })
   @JoinColumn({ name: "user_id" })
   user!: User;
+
+  @OneToMany(() => CalendarEventAttendee, (attendee) => attendee.calendarEvent)
+  attendees?: CalendarEventAttendee[];
 
   @Column({
     type: "varchar",
