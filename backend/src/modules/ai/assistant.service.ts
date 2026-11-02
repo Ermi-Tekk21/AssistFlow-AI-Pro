@@ -487,6 +487,44 @@ export class AssistantService {
         break;
       }
 
+      case "calendar_cancel": {
+        session.activeDraft = null;
+        let event: CalendarEvent | null = null;
+        if (intentResult.params.calendarEventId) {
+          event = await this.calendarRepo.findOne({
+            where: { id: intentResult.params.calendarEventId, userId },
+          });
+        } else if (intentResult.params.query) {
+          event = await this.calendarRepo
+            .createQueryBuilder("e")
+            .where("e.userId = :userId", { userId })
+            .andWhere("e.status = :status", { status: CalendarEventStatus.CONFIRMED })
+            .andWhere("e.title ILIKE :q", { q: `%${intentResult.params.query}%` })
+            .orderBy("e.startAt", "ASC")
+            .getOne();
+        }
+
+        if (!event) {
+          responseText = `Could not find an upcoming meeting matching "${
+            intentResult.params.query || intentResult.params.calendarEventId
+          }".`;
+          break;
+        }
+
+        const proposal = `Cancel meeting "${event.title}" scheduled for ${event.startAt.toISOString()}`;
+        proposedPendingAction = await confirmationsService.proposeAction(userId, {
+          actionType: PendingActionType.CALENDAR_EVENT_CANCEL,
+          proposal,
+          payload: { id: event.id },
+          targetEntityId: event.id,
+          targetEntityType: "calendar_event",
+          expiresInMinutes: 10,
+        });
+
+        responseText = `Proposal:\n"${proposal}"\n\nConfirm cancellation? (yes/no)`;
+        break;
+      }
+
       case "daily_briefing_request": {
         session.activeDraft = null;
         const pendingTasks = await this.taskRepo.find({

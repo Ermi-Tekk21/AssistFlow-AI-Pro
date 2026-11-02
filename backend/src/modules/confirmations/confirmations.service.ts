@@ -6,6 +6,7 @@ import {
 } from "../../entities/PendingAction";
 import { tasksService } from "../tasks/tasks.service";
 import { remindersService } from "../reminders/reminders.service";
+import { calendarService } from "../calendar/calendar.service";
 import { BadRequestError, NotFoundError } from "../../middleware/errors";
 import {
   ProposeActionInput,
@@ -245,6 +246,15 @@ export class ConfirmationsService {
 
       case PendingActionType.REMINDER_CANCEL:
         return await remindersService.cancelReminder(userId, payload.id);
+
+      case PendingActionType.CALENDAR_EVENT_CREATE:
+        return await calendarService.createEvent(userId, payload as any);
+
+      case PendingActionType.CALENDAR_EVENT_UPDATE:
+        return await calendarService.updateEvent(userId, payload.id, payload.input);
+
+      case PendingActionType.CALENDAR_EVENT_CANCEL:
+        return await calendarService.cancelEvent(userId, payload.id);
 
       default:
         throw new BadRequestError(`Unsupported action type execution: ${actionType}`);
