@@ -11,6 +11,7 @@ import {
 
 import { User } from "./User";
 import { Task } from "./Task";
+import { CalendarEvent } from "./CalendarEvent";
 
 export enum ReminderStatus {
   SCHEDULED = "scheduled",
@@ -22,6 +23,7 @@ export enum ReminderStatus {
 
 @Entity("reminders")
 @Index(["userId", "status", "scheduledAt"])
+@Index(["userId", "calendarEventId"])
 export class Reminder {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
@@ -39,6 +41,13 @@ export class Reminder {
   @ManyToOne(() => Task, { nullable: true, onDelete: "SET NULL" })
   @JoinColumn({ name: "task_id" })
   task!: Task | null;
+
+  @Column({ type: "uuid", nullable: true, name: "calendar_event_id" })
+  calendarEventId!: string | null;
+
+  @ManyToOne(() => CalendarEvent, { nullable: true, onDelete: "CASCADE" })
+  @JoinColumn({ name: "calendar_event_id" })
+  calendarEvent!: CalendarEvent | null;
 
   @Column({ type: "varchar", length: 255 })
   title!: string;
