@@ -21,7 +21,7 @@ export class GeminiClient {
 
   constructor(options?: { apiKey?: string; model?: string; transport?: GeminiTransport }) {
     this.apiKey = options?.apiKey || process.env.GEMINI_API_KEY || "";
-    this.model = options?.model || process.env.GEMINI_MODEL || "gemini-3.8-flash";
+    this.model = options?.model || process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
     this.customTransport = options?.transport;
   }
 

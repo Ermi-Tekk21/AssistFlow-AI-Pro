@@ -7,6 +7,7 @@ import { User } from "../../entities/User";
 import { Task, TaskStatus } from "../../entities/Task";
 import { Reminder } from "../../entities/Reminder";
 import { remindersDeliveryService } from "../reminders/remindersDelivery.service";
+import { briefingService } from "../briefing/briefing.service";
 
 export interface BriefingUserSummary {
   userId: string;
@@ -118,16 +119,9 @@ export class WorkflowsService {
           continue;
         }
 
-        // Get user's local day bounds
-        const localDateStr = new Intl.DateTimeFormat("en-CA", {
-          timeZone: userTz,
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-        }).format(refDate); // YYYY-MM-DD
-
-        const startOfDay = new Date(`${localDateStr}T00:00:00.000Z`);
-        const endOfDay = new Date(`${localDateStr}T23:59:59.999Z`);
+        // Get user's local day bounds with accurate timezone offset
+        const { localDateStr, startUtc: startOfDay, endUtc: endOfDay } =
+          briefingService.getLocalDayBounds(userTz, refDate);
 
         // Query due/incomplete tasks for user
         const tasks = await this.taskRepo
