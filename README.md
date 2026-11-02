@@ -175,9 +175,64 @@ Response (`200 OK`):
   "data": {
     "id": "e2d9787e-34d0-44c5-b644-2e783365b6d4",
     "status": "completed",
-    "completedAt": "2026-11-01T14:15:30.000Z",
-    ...
+    "completedAt": "2026-11-01T14:15:30.000Z"
   }
 }
 ```
+
+---
+
+## Reminder Management API (Phase 2)
+
+All endpoints under `/api/reminders` require authentication via `x-user-id` header (or `Authorization: Bearer <user_id>`).
+
+### Endpoints Overview
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/reminders` | Create standalone or task/calendar-linked reminder |
+| `GET` | `/api/reminders` | List/filter reminders chronologically |
+| `GET` | `/api/reminders/:id` | Get reminder by ID with relations |
+| `PATCH` | `/api/reminders/:id` | Reschedule or update reminder details |
+| `POST` | `/api/reminders/:id/snooze` | Snooze reminder (reschedule by minutes or explicit time) |
+| `POST` | `/api/reminders/:id/cancel` | Cancel reminder |
+
+### Domain Rules & Invariants
+
+1. **Future Scheduling**: `scheduledAt` must be a future instant. Past dates are rejected with `400 Bad Request`.
+2. **Timezone Correctness**: Validates IANA timezone (defaults to `Africa/Addis_Ababa`).
+3. **Mutual Exclusivity**: A reminder may link to a `taskId` OR a `calendarEventId`, but **never both simultaneously** (enforced by Zod schema and PostgreSQL `CHECK` constraint).
+4. **Snooze as Rescheduling**: Snoozing updates `scheduledAt` and ensures status is reset to `scheduled` without creating duplicate records.
+5. **Terminal State Protection**: Cancelled or already Sent reminders cannot be rescheduled or modified.
+
+### API Usage Examples
+
+#### 1. Create a Standalone Reminder
+```bash
+curl -X POST http://localhost:3000/api/reminders \
+  -H "Content-Type: application/json" \
+  -H "x-user-id: 32628984-366b-4c22-8995-3222734d51bf" \
+  -d '{
+    "title": "Call accountant regarding tax declaration",
+    "scheduledAt": "2026-11-05T14:00:00.000Z",
+    "timezone": "Africa/Addis_Ababa"
+  }'
+```
+
+#### 2. Snooze a Reminder
+```bash
+curl -X POST http://localhost:3000/api/reminders/REMINDER_UUID/snooze \
+  -H "Content-Type: application/json" \
+  -H "x-user-id: 32628984-366b-4c22-8995-3222734d51bf" \
+  -d '{
+    "snoozeMinutes": 15
+  }'
+```
+
+#### 3. Cancel a Reminder
+```bash
+curl -X POST http://localhost:3000/api/reminders/REMINDER_UUID/cancel \
+  -H "x-user-id: 32628984-366b-4c22-8995-3222734d51bf"
+```
+
 

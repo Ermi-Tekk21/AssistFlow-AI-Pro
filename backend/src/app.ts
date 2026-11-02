@@ -1,5 +1,6 @@
 import express from "express";
 import { tasksRouter } from "./modules/tasks/tasks.routes";
+import { remindersRouter } from "./modules/reminders/reminders.routes";
 import { errorHandler } from "./middleware/errorHandler";
 import { NotFoundError } from "./middleware/errors";
 
@@ -16,6 +17,7 @@ app.get("/health", (_req, res) => {
 
 // Feature modules
 app.use("/api/tasks", tasksRouter);
+app.use("/api/reminders", remindersRouter);
 
 // 404 Catch-all handler for unknown endpoints
 app.use((_req, _res, next) => {
