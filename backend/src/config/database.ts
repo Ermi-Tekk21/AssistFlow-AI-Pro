@@ -13,6 +13,7 @@ import { WorkflowExecution } from "../entities/WorkflowExecution";
 import { ConversationSession } from "../entities/ConversationSession";
 import { IntegrationAccount } from "../entities/IntegrationAccount";
 import { CalendarEventAttendee } from "../entities/CalendarEventAttendee";
+import { DailyBriefingRecord } from "../entities/DailyBriefingRecord";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -34,6 +35,7 @@ export const AppDataSource = new DataSource({
     ConversationSession,
     IntegrationAccount,
     CalendarEventAttendee,
+    DailyBriefingRecord,
   ],
 
   migrations: [__dirname + "/../../migrations/*{.ts,.js}"],
