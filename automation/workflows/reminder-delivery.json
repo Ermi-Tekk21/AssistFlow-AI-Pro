@@ -1,0 +1,84 @@
+{
+  "name": "AssistFlow AI - Reminder Delivery",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "e305e5da-39d7-463e-a131-000000000001",
+      "name": "Every Minute Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3000/api/workflows/reminders/delivery",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-workflow-secret",
+              "value": "={{ $env.N8N_WORKFLOW_SECRET }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"limit\": 50,\n  \"triggeredBy\": \"n8n\"\n}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "e305e5da-39d7-463e-a131-000000000002",
+      "name": "Call Reminder Delivery API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        300
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every Minute Schedule": {
+      "main": [
+        [
+          {
+            "node": "Call Reminder Delivery API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1.0",
+  "meta": {
+    "instanceId": "assistflow-n8n"
+  },
+  "tags": [
+    "assistflow",
+    "reminders"
+  ]
+}
