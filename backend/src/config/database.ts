@@ -10,6 +10,7 @@ import { CalendarEvent } from "../entities/CalendarEvent";
 import { PendingAction } from "../entities/PendingAction";
 import { NotificationAttempt } from "../entities/NotificationAttempt";
 import { WorkflowExecution } from "../entities/WorkflowExecution";
+import { ConversationSession } from "../entities/ConversationSession";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -28,6 +29,7 @@ export const AppDataSource = new DataSource({
     PendingAction,
     NotificationAttempt,
     WorkflowExecution,
+    ConversationSession,
   ],
 
   migrations: [__dirname + "/../../migrations/*{.ts,.js}"],
