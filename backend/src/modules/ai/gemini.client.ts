@@ -21,7 +21,7 @@ export class GeminiClient {
 
   constructor(options?: { apiKey?: string; model?: string; transport?: GeminiTransport }) {
     this.apiKey = options?.apiKey || process.env.GEMINI_API_KEY || "";
-    this.model = options?.model || "gemini-2.5-flash";
+    this.model = options?.model || process.env.GEMINI_MODEL || "gemini-3.8-flash";
     this.customTransport = options?.transport;
   }
 
@@ -162,7 +162,10 @@ Respond ONLY with valid JSON conforming to { "intent": "...", "params": { ... } 
     try {
       response = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": this.apiKey,
+        },
         body: JSON.stringify(payload),
       });
     } catch (networkErr: any) {
