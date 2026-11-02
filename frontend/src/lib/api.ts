@@ -7,7 +7,7 @@ import {
   DailyBriefingPreview,
 } from "../types";
 
-const BASE_URL = ""; // Empty string routes through Vite dev proxy to /api
+const BASE_URL = import.meta.env.VITE_API_URL || "";
 
 export class ApiError extends Error {
   status: number;

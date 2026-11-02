@@ -72,7 +72,8 @@ interface AppState {
   sendBriefingNow: () => Promise<void>;
 }
 
-const DEFAULT_USER_ID = "32628984-366b-4c22-8995-3222734d51bf";
+const DEFAULT_USER_ID =
+  import.meta.env.VITE_DEFAULT_USER_ID || "32628984-366b-4c22-8995-3222734d51bf";
 const INITIAL_USER_ID = localStorage.getItem("assistflow_user_id") || DEFAULT_USER_ID;
 
 export const useStore = create<AppState>((set, get) => ({
