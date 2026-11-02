@@ -585,6 +585,55 @@ Response (`201 Created`):
 }
 ```
 
+---
+
+## Daily Morning Briefing (Phase 8)
+
+Phase 8 introduces the automated morning executive briefing, aggregating tasks, reminders, and Google Calendar meetings with video links into a structured Telegram message.
+
+### Architectural Rules & Guarantees
+
+1. **Timezone-Aware Local Window**: Calculations determine the user's exact midnight-to-midnight boundary in their IANA timezone (`Africa/Addis_Ababa`), ensuring events and due dates are accurately captured regardless of UTC offsets.
+2. **Comprehensive Content Aggregation**:
+   - **Calendar Meetings**: Confirmed events for today with start/end times and Google Meet links (`📹 Join Google Meet`).
+   - **Reminders**: Scheduled reminders for today with local trigger times.
+   - **Tasks**: Incomplete tasks ordered by priority (`HIGH` -> `MEDIUM` -> `LOW`), clearly tagging overdue items (`⚠️ Overdue`).
+3. **Empty-Day Graceful Message**: When no tasks, reminders, or meetings are scheduled for the day, a positive, clear-day message is provided.
+4. **Idempotency & Duplicate Prevention**:
+   - Each briefing delivery is tracked in PostgreSQL table `daily_briefings` with `(user_id, briefing_date)`.
+   - Automated triggers and scheduled workflows will **never send duplicate briefings** for the same local day.
+   - Manual sends via `POST /api/briefing/send` can pass `{ "force": true }` to bypass the once-per-day restriction for testing.
+5. **Disabled Setting Enforcement**: Briefings are only dispatched when `dailyBriefingEnabled = true` on the user account.
+
+### Endpoints Overview
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/briefing/preview` | Preview today's compiled briefing data and formatted Telegram HTML |
+| `POST` | `/api/briefing/send` | Dispatch today's briefing to Telegram for authenticated user |
+| `POST` | `/api/briefing/dispatch-due` | Protected endpoint for n8n to dispatch briefings matching local schedule |
+
+`preview` and `send` require user authentication (`x-user-id: <user_uuid>`). `dispatch-due` requires `x-workflow-secret: <N8N_WORKFLOW_SECRET>`.
+
+### Example Telegram Briefing Output
+
+```html
+☀️ <b>AssistFlow Daily Briefing</b>
+📅 <b>Monday, Nov 2, 2026</b> | 🌍 <code>Africa/Addis_Ababa</code>
+
+📅 <b>Today's Meetings (1):</b>
+• <b>Q4 Strategy Sync</b> (02:00 PM - 03:00 PM)
+  📹 <a href="https://meet.google.com/abc-defg-hij">Join Google Meet</a>
+
+⏰ <b>Today's Reminders (1):</b>
+• <b>Submit team timesheets</b> at <code>05:00 PM</code>
+
+📋 <b>Pending Tasks (2):</b>
+• [HIGH] <b>Quarterly Board Review</b> ⚠️ <b>(Overdue: 11:00 AM)</b>
+• [MED] <b>Update documentation</b>
+```
+
+
 
 
 
