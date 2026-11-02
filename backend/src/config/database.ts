@@ -7,6 +7,7 @@ import { User } from "../entities/User";
 import { Task } from "../entities/Task";
 import { Reminder } from "../entities/Reminder";
 import { CalendarEvent } from "../entities/CalendarEvent";
+import { PendingAction } from "../entities/PendingAction";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -17,7 +18,7 @@ export const AppDataSource = new DataSource({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
 
-  entities: [User, Task, Reminder, CalendarEvent],
+  entities: [User, Task, Reminder, CalendarEvent, PendingAction],
 
   migrations: [__dirname + "/../../migrations/*{.ts,.js}"],
 

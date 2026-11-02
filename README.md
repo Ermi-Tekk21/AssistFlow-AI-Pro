@@ -235,4 +235,69 @@ curl -X POST http://localhost:3000/api/reminders/REMINDER_UUID/cancel \
   -H "x-user-id: 32628984-366b-4c22-8995-3222734d51bf"
 ```
 
+---
+
+## Confirmation Workflow API (Phase 3)
+
+The Confirmation subsystem enforces the non-negotiable rule: **every state-changing mutation must be proposed and explicitly confirmed before execution**.
+
+All endpoints under `/api/confirmations` require authentication via `x-user-id` header (or `Authorization: Bearer <user_id>`).
+
+### Endpoints Overview
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/confirmations/propose` | Propose a mutation without executing it |
+| `GET` | `/api/confirmations` | List pending actions (supports `?activeOnly=true`) |
+| `GET` | `/api/confirmations/:id` | Retrieve proposal details by ID |
+| `POST` | `/api/confirmations/:id/confirm` | Concurrency-safe, single-use confirmation & execution |
+| `POST` | `/api/confirmations/:id/reject` | Reject/cancel proposal |
+| `POST` | `/api/confirmations/reply` | Quick reply ("yes"/"no") with unambiguous resolution |
+
+### Domain Rules & Invariants
+
+1. **Zero Premature Mutation**: Proposing an action saves a `PendingAction` record in PostgreSQL. Absolutely no database entities (tasks, reminders, calendar events) are modified until confirmation is received.
+2. **Single-Use & Concurrency-Safe**: Row-level pessimistic locking (`SELECT ... FOR UPDATE`) prevents concurrent execution or double-mutations. Re-confirming an executed action is rejected with `400 Bad Request`.
+3. **Automatic Expiry**: Proposals expire after `expiresInMinutes` (default 10). Expired proposals cannot be confirmed.
+4. **Natural Language / Quick Reply**:
+   - `yes`, `y`, `confirm`, `proceed` -> Confirms.
+   - `no`, `n`, `reject`, `cancel` -> Rejects.
+   - If user has **multiple active pending actions**, replying without an `actionId` is rejected as **ambiguous** (`400 Bad Request`).
+   - If user has **0 active pending actions**, replying is rejected (`400 Bad Request`).
+
+### API Usage Examples
+
+#### 1. Propose an Action
+```bash
+curl -X POST http://localhost:3000/api/confirmations/propose \
+  -H "Content-Type: application/json" \
+  -H "x-user-id: 32628984-366b-4c22-8995-3222734d51bf" \
+  -d '{
+    "actionType": "task_create",
+    "proposal": "Create urgent task: Deploy security patch",
+    "payload": {
+      "title": "Deploy security patch",
+      "priority": "urgent"
+    },
+    "expiresInMinutes": 10
+  }'
+```
+
+#### 2. Confirm Proposal by ID
+```bash
+curl -X POST http://localhost:3000/api/confirmations/ACTION_UUID/confirm \
+  -H "x-user-id: 32628984-366b-4c22-8995-3222734d51bf"
+```
+
+#### 3. Quick Reply Resolution
+```bash
+curl -X POST http://localhost:3000/api/confirmations/reply \
+  -H "Content-Type: application/json" \
+  -H "x-user-id: 32628984-366b-4c22-8995-3222734d51bf" \
+  -d '{
+    "reply": "yes"
+  }'
+```
+
+
 
