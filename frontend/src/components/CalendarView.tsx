@@ -1,8 +1,18 @@
-import React, { useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useStore } from "../store/useStore";
 import { Badge } from "./ui/Badge";
 import { Button } from "./ui/Button";
-import { Calendar, Video, Clock, Users, XCircle, Loader2 } from "lucide-react";
+import { Input } from "./ui/Input";
+import { Card, CardHeader, CardTitle, CardContent } from "./ui/Card";
+import {
+  Calendar,
+  Video,
+  Clock,
+  Users,
+  XCircle,
+  Loader2,
+  Plus,
+} from "lucide-react";
 import { formatDateTime } from "../lib/utils";
 
 export const CalendarView: React.FC = () => {
@@ -10,24 +20,137 @@ export const CalendarView: React.FC = () => {
     calendarEvents = [],
     calendarLoading = false,
     fetchCalendarEvents,
+    createCalendarEvent,
     cancelCalendarEvent,
   } = useStore();
+
+  const [isAdding, setIsAdding] = useState(false);
+  const [summary, setSummary] = useState("");
+  const [startAt, setStartAt] = useState("");
+  const [endAt, setEndAt] = useState("");
+  const [description, setDescription] = useState("");
+  const [attendees, setAttendees] = useState("");
 
   useEffect(() => {
     fetchCalendarEvents();
   }, [fetchCalendarEvents]);
 
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!summary.trim() || !startAt || !endAt) return;
+
+    const startIso = new Date(startAt).toISOString();
+    const endIso = new Date(endAt).toISOString();
+    const attendeesList = attendees
+      .split(",")
+      .map((a) => a.trim())
+      .filter((a) => a.length > 0);
+
+    await createCalendarEvent(
+      summary.trim(),
+      startIso,
+      endIso,
+      description.trim() || undefined,
+      attendeesList.length > 0 ? attendeesList : undefined
+    );
+
+    setSummary("");
+    setStartAt("");
+    setEndAt("");
+    setDescription("");
+    setAttendees("");
+    setIsAdding(false);
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-4">
-      <div className="flex items-center justify-between">
+      {/* Top Header & Actions Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-slate-900">Google Calendar Agenda</h2>
           <p className="text-xs text-slate-500">
             Meetings synchronized with Google Calendar. Google Meet links and 10-minute reminders are provisioned automatically.
           </p>
         </div>
+
+        <Button
+          size="sm"
+          onClick={() => setIsAdding(!isAdding)}
+          variant={isAdding ? "outline" : "default"}
+        >
+          <Plus className="w-4 h-4 mr-1.5" />
+          {isAdding ? "Cancel" : "Add Meeting"}
+        </Button>
       </div>
 
+      {/* New Meeting Inline Form */}
+      {isAdding && (
+        <Card className="border-slate-300 shadow-sm bg-white">
+          <CardHeader className="py-3">
+            <CardTitle className="text-xs font-semibold">Schedule New Meeting</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-3">
+            <form onSubmit={handleCreate} className="space-y-3">
+              <Input
+                placeholder="Meeting title / summary..."
+                value={summary}
+                onChange={(e) => setSummary(e.target.value)}
+                className="text-xs"
+                autoFocus
+              />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-slate-500 w-16 shrink-0">Starts:</span>
+                  <input
+                    type="datetime-local"
+                    value={startAt}
+                    onChange={(e) => setStartAt(e.target.value)}
+                    className="text-xs px-2.5 py-1.5 rounded border border-slate-200 bg-white w-full"
+                    required
+                  />
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-slate-500 w-16 shrink-0">Ends:</span>
+                  <input
+                    type="datetime-local"
+                    value={endAt}
+                    onChange={(e) => setEndAt(e.target.value)}
+                    className="text-xs px-2.5 py-1.5 rounded border border-slate-200 bg-white w-full"
+                    required
+                  />
+                </div>
+              </div>
+
+              <Input
+                placeholder="Attendee emails (comma-separated, e.g. alex@example.com, sara@example.com)..."
+                value={attendees}
+                onChange={(e) => setAttendees(e.target.value)}
+                className="text-xs font-mono"
+              />
+
+              <Input
+                placeholder="Optional description / notes..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="text-xs"
+              />
+
+              <div className="flex justify-end space-x-2 pt-2">
+                <Button type="button" variant="ghost" size="sm" onClick={() => setIsAdding(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" size="sm" disabled={!summary.trim() || !startAt || !endAt}>
+                  Schedule Meeting
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Calendar List */}
       {calendarLoading ? (
         <div className="py-12 text-center text-xs text-slate-500 flex items-center justify-center space-x-2">
           <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
@@ -40,7 +163,7 @@ export const CalendarView: React.FC = () => {
           </div>
           <p className="text-sm font-medium text-slate-800">No upcoming meetings</p>
           <p className="text-xs text-slate-500 mt-1">
-            Say "Schedule meeting tomorrow with team from 3pm to 4pm" in the chat to create one!
+            Click "Add Meeting" above or say "Schedule meeting tomorrow with team from 3pm to 4pm" in chat!
           </p>
         </div>
       ) : (

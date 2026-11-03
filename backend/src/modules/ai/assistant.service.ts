@@ -128,9 +128,13 @@ export class AssistantService {
         }
 
         if (intentResult.params.confirmed) {
-          const outcome = await confirmationsService.confirmAction(userId, activePendingAction.id);
-          responseText = `Confirmed and executed: "${activePendingAction.proposal}".`;
-          extraData = outcome.result;
+          try {
+            const outcome = await confirmationsService.confirmAction(userId, activePendingAction.id);
+            responseText = `Confirmed and executed: "${activePendingAction.proposal}".`;
+            extraData = outcome.result;
+          } catch (execErr: any) {
+            responseText = `Could not execute action: ${execErr.message || execErr}`;
+          }
         } else {
           const rejected = await confirmationsService.rejectAction(userId, activePendingAction.id);
           responseText = `Cancelled: "${activePendingAction.proposal}". No changes were made.`;

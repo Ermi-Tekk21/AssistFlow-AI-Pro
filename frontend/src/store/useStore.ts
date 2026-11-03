@@ -63,6 +63,13 @@ interface AppState {
   calendarEvents: CalendarEvent[];
   calendarLoading: boolean;
   fetchCalendarEvents: () => Promise<void>;
+  createCalendarEvent: (
+    summary: string,
+    startAt: string,
+    endAt: string,
+    description?: string,
+    attendees?: string[]
+  ) => Promise<void>;
   cancelCalendarEvent: (eventId: string) => Promise<void>;
 
   // Daily Briefing
@@ -150,13 +157,13 @@ export const useStore = create<AppState>((set, get) => ({
         chatLoading: false,
       });
 
-      // If a pending action was created or executed, refresh pending actions
-      if (result.pendingAction || result.intent === "confirmation_reply") {
-        get().fetchPendingActions();
-        get().fetchTasks();
-        get().fetchReminders();
-        get().fetchCalendarEvents();
-      }
+      // Always sync pending actions and entities after each assistant turn
+      await get().fetchPendingActions();
+      await Promise.all([
+        get().fetchTasks(),
+        get().fetchReminders(),
+        get().fetchCalendarEvents(),
+      ]);
     } catch (err: any) {
       set({ chatLoading: false });
       get().showToast(err.message, "error");
@@ -300,6 +307,24 @@ export const useStore = create<AppState>((set, get) => ({
     } catch (err: any) {
       set({ calendarEvents: [], calendarLoading: false });
       get().showToast(`Failed to load calendar events: ${err.message}`, "error");
+    }
+  },
+
+  createCalendarEvent: async (
+    summary: string,
+    startAt: string,
+    endAt: string,
+    description?: string,
+    attendees?: string[]
+  ) => {
+    const { userId } = get();
+    try {
+      await api.createCalendarEvent(userId, { summary, startAt, endAt, description, attendees });
+      get().showToast(`Meeting "${summary}" scheduled!`, "success");
+      await get().fetchCalendarEvents();
+      await get().fetchReminders();
+    } catch (err: any) {
+      get().showToast(err.message, "error");
     }
   },
 

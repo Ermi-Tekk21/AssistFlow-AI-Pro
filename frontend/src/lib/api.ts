@@ -114,6 +114,23 @@ export const api = {
     return [];
   },
 
+  async createCalendarEvent(
+    userId: string,
+    data: {
+      summary: string;
+      startAt: string;
+      endAt: string;
+      description?: string;
+      location?: string;
+      attendees?: string[];
+    }
+  ): Promise<{ event: CalendarEvent; reminder?: Reminder }> {
+    return request<{ event: CalendarEvent; reminder?: Reminder }>("/api/calendar/events", userId, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
   async cancelCalendarEvent(userId: string, eventId: string): Promise<CalendarEvent> {
     return request<CalendarEvent>(`/api/calendar/events/${eventId}`, userId, {
       method: "DELETE",

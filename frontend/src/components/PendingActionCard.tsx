@@ -7,9 +7,23 @@ import { CheckCircle2, XCircle, AlertTriangle, Clock } from "lucide-react";
 import { formatDateTime } from "../lib/utils";
 
 export const PendingActionCard: React.FC = () => {
-  const { pendingActions = [], confirmAction, rejectAction } = useStore();
+  const {
+    pendingActions = [],
+    sendChatMessage,
+    chatLoading,
+  } = useStore();
 
   if (!pendingActions || pendingActions.length === 0) return null;
+
+  const handleConfirm = async () => {
+    if (chatLoading) return;
+    await sendChatMessage("yes");
+  };
+
+  const handleCancel = async () => {
+    if (chatLoading) return;
+    await sendChatMessage("no");
+  };
 
   return (
     <div className="space-y-3 mb-6">
@@ -55,7 +69,8 @@ export const PendingActionCard: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => rejectAction(action.id)}
+              disabled={chatLoading}
+              onClick={handleCancel}
               className="border-slate-300 text-slate-700 hover:bg-slate-100"
             >
               <XCircle className="w-4 h-4 mr-1.5 text-slate-500" />
@@ -64,7 +79,8 @@ export const PendingActionCard: React.FC = () => {
             <Button
               variant="success"
               size="sm"
-              onClick={() => confirmAction(action.id)}
+              disabled={chatLoading}
+              onClick={handleConfirm}
             >
               <CheckCircle2 className="w-4 h-4 mr-1.5" />
               Confirm & Execute (Yes)
