@@ -131,6 +131,15 @@ export class AssistantService {
           try {
             const outcome = await confirmationsService.confirmAction(userId, activePendingAction.id);
             responseText = `Confirmed and executed: "${activePendingAction.proposal}".`;
+
+            // If a meeting was scheduled, prominently return the Google Meet URL so the user can share it
+            if (
+              activePendingAction.actionType === PendingActionType.CALENDAR_EVENT_CREATE &&
+              outcome.result?.event?.meetUrl
+            ) {
+              responseText += `\n\nGoogle Meet Link:\n${outcome.result.event.meetUrl}\n(Share this URL with attendees to join)`;
+            }
+
             extraData = outcome.result;
           } catch (execErr: any) {
             responseText = `Could not execute action: ${execErr.message || execErr}`;
@@ -476,9 +485,22 @@ export class AssistantService {
       }
 
       case "calendar_create": {
-        session.activeDraft = null;
         const { summary, startAt, endAt, description, location, attendees } = intentResult.params;
-        const proposal = `Create meeting "${summary}" from ${startAt} to ${endAt}`;
+
+        // Require at least one attendee email for meeting creation
+        if (!attendees || attendees.length === 0) {
+          session.activeDraft = {
+            intent: "calendar_create",
+            params: intentResult.params,
+            missingFields: ["attendees"],
+          };
+          responseText = `Who will be attending "${summary}"? Please provide at least one attendee email address (e.g. colleague@example.com) to complete the meeting invite.`;
+          break;
+        }
+
+        session.activeDraft = null;
+        const attendeesStr = attendees.join(", ");
+        const proposal = `Create meeting "${summary}" from ${startAt} to ${endAt} with attendees: ${attendeesStr}`;
 
         proposedPendingAction = await confirmationsService.proposeAction(userId, {
           actionType: PendingActionType.CALENDAR_EVENT_CREATE,

@@ -25,12 +25,14 @@ export class ApiError extends Error {
 
 async function request<T>(
   endpoint: string,
-  userId: string,
+  userId?: string,
   options: RequestInit = {}
 ): Promise<T> {
+  const token = localStorage.getItem("assistflow_token");
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    "x-user-id": userId,
+    ...(userId ? { "x-user-id": userId } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers as Record<string, string>),
   };
 
@@ -192,6 +194,31 @@ export const api = {
     return request("/api/briefing/send", userId, {
       method: "POST",
       body: JSON.stringify({ force }),
+    });
+  },
+
+  // User Authentication & Profile
+  async login(email: string, password: string): Promise<{ token: string; user: any }> {
+    return request<{ token: string; user: any }>("/api/auth/login", undefined, {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
+  },
+
+  async getMe(): Promise<{ user: any }> {
+    return request<{ user: any }>("/api/auth/me");
+  },
+
+  async updateProfile(updates: {
+    firstName?: string;
+    lastName?: string;
+    dailyBriefingTime?: string | null;
+    dailyBriefingEnabled?: boolean;
+    timezone?: string;
+  }): Promise<{ user: any }> {
+    return request<{ user: any }>("/api/auth/profile", undefined, {
+      method: "PUT",
+      body: JSON.stringify(updates),
     });
   },
 };

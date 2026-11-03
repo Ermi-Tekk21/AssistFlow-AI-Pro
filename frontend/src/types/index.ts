@@ -131,3 +131,17 @@ export interface DailyBriefingPreview {
   reminders: Reminder[];
   events: CalendarEvent[];
 }
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  timezone: string;
+  dailyBriefingTime: string | null;
+  dailyBriefingEnabled: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export type NavTab = "chat" | "tasks" | "reminders" | "calendar" | "briefing" | "profile";

@@ -12,6 +12,8 @@ import {
   XCircle,
   Loader2,
   Plus,
+  Copy,
+  Check,
 } from "lucide-react";
 import { formatDateTime } from "../lib/utils";
 
@@ -22,6 +24,7 @@ export const CalendarView: React.FC = () => {
     fetchCalendarEvents,
     createCalendarEvent,
     cancelCalendarEvent,
+    showToast,
   } = useStore();
 
   const [isAdding, setIsAdding] = useState(false);
@@ -30,28 +33,35 @@ export const CalendarView: React.FC = () => {
   const [endAt, setEndAt] = useState("");
   const [description, setDescription] = useState("");
   const [attendees, setAttendees] = useState("");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCalendarEvents();
   }, [fetchCalendarEvents]);
 
+  const attendeesList = attendees
+    .split(",")
+    .map((a) => a.trim())
+    .filter((a) => a.length > 0);
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!summary.trim() || !startAt || !endAt) return;
 
+    if (attendeesList.length === 0) {
+      showToast("Please provide at least one attendee email address for the meeting.", "error");
+      return;
+    }
+
     const startIso = new Date(startAt).toISOString();
     const endIso = new Date(endAt).toISOString();
-    const attendeesList = attendees
-      .split(",")
-      .map((a) => a.trim())
-      .filter((a) => a.length > 0);
 
     await createCalendarEvent(
       summary.trim(),
       startIso,
       endIso,
       description.trim() || undefined,
-      attendeesList.length > 0 ? attendeesList : undefined
+      attendeesList
     );
 
     setSummary("");
@@ -60,6 +70,15 @@ export const CalendarView: React.FC = () => {
     setDescription("");
     setAttendees("");
     setIsAdding(false);
+  };
+
+  const handleCopyMeetUrl = (eventId: string, meetUrl: string) => {
+    navigator.clipboard.writeText(meetUrl);
+    setCopiedId(eventId);
+    showToast("Google Meet link copied to clipboard! Ready to share.", "success");
+    setTimeout(() => {
+      setCopiedId((curr) => (curr === eventId ? null : curr));
+    }, 2500);
   };
 
   return (
@@ -86,18 +105,21 @@ export const CalendarView: React.FC = () => {
       {/* New Meeting Inline Form */}
       {isAdding && (
         <Card className="border-slate-300 shadow-sm bg-white">
-          <CardHeader className="py-3">
+          <CardHeader className="py-3 border-b border-slate-100">
             <CardTitle className="text-xs font-semibold">Schedule New Meeting</CardTitle>
           </CardHeader>
           <CardContent className="pt-3">
             <form onSubmit={handleCreate} className="space-y-3">
-              <Input
-                placeholder="Meeting title / summary..."
-                value={summary}
-                onChange={(e) => setSummary(e.target.value)}
-                className="text-xs"
-                autoFocus
-              />
+              <div className="space-y-1">
+                <Input
+                  placeholder="Meeting title / summary (e.g. Q4 Executive Strategy Sync)..."
+                  value={summary}
+                  onChange={(e) => setSummary(e.target.value)}
+                  className="text-xs"
+                  required
+                  autoFocus
+                />
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex items-center space-x-2">
@@ -123,25 +145,45 @@ export const CalendarView: React.FC = () => {
                 </div>
               </div>
 
-              <Input
-                placeholder="Attendee emails (comma-separated, e.g. alex@example.com, sara@example.com)..."
-                value={attendees}
-                onChange={(e) => setAttendees(e.target.value)}
-                className="text-xs font-mono"
-              />
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-slate-700">
+                    Attendees <span className="text-red-500">* (at least one email required)</span>
+                  </span>
+                  <span className="text-[11px] text-slate-400">Comma-separated</span>
+                </div>
+                <Input
+                  placeholder="colleague@example.com, partner@company.com..."
+                  value={attendees}
+                  onChange={(e) => setAttendees(e.target.value)}
+                  className="text-xs font-mono"
+                  required
+                />
+                {attendees.trim().length > 0 && attendeesList.length === 0 && (
+                  <p className="text-[11px] text-red-500">
+                    Please provide at least one valid attendee email address.
+                  </p>
+                )}
+              </div>
 
-              <Input
-                placeholder="Optional description / notes..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="text-xs"
-              />
+              <div className="space-y-1">
+                <Input
+                  placeholder="Optional meeting agenda / notes..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="text-xs"
+                />
+              </div>
 
               <div className="flex justify-end space-x-2 pt-2">
                 <Button type="button" variant="ghost" size="sm" onClick={() => setIsAdding(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" size="sm" disabled={!summary.trim() || !startAt || !endAt}>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={!summary.trim() || !startAt || !endAt || attendeesList.length === 0}
+                >
                   Schedule Meeting
                 </Button>
               </div>
@@ -163,13 +205,14 @@ export const CalendarView: React.FC = () => {
           </div>
           <p className="text-sm font-medium text-slate-800">No upcoming meetings</p>
           <p className="text-xs text-slate-500 mt-1">
-            Click "Add Meeting" above or say "Schedule meeting tomorrow with team from 3pm to 4pm" in chat!
+            Click "Add Meeting" above or say "Schedule meeting tomorrow with alex@example.com from 3pm to 4pm" in chat!
           </p>
         </div>
       ) : (
         <div className="space-y-3">
           {(calendarEvents || []).map((event) => {
             const isCancelled = event.status === "cancelled";
+            const isCopied = copiedId === event.id;
 
             return (
               <div
@@ -180,8 +223,8 @@ export const CalendarView: React.FC = () => {
                     : "border-slate-200 hover:border-slate-300"
                 }`}
               >
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                  <div className="space-y-1.5 flex-1">
                     <div className="flex items-center space-x-2">
                       <h3
                         className={`text-sm font-semibold ${
@@ -202,7 +245,7 @@ export const CalendarView: React.FC = () => {
                     )}
 
                     {/* Timing */}
-                    <div className="flex items-center space-x-2 text-xs font-mono text-slate-500 pt-1">
+                    <div className="flex items-center space-x-2 text-xs font-mono text-slate-500 pt-0.5">
                       <Clock className="w-3.5 h-3.5 text-slate-400" />
                       <span>{formatDateTime(event.startAt)}</span>
                       <span>—</span>
@@ -212,7 +255,7 @@ export const CalendarView: React.FC = () => {
 
                     {/* Attendees */}
                     {event.attendees && event.attendees.length > 0 && (
-                      <div className="flex items-center space-x-1.5 pt-2 flex-wrap gap-1">
+                      <div className="flex items-center space-x-1.5 pt-1.5 flex-wrap gap-1">
                         <Users className="w-3.5 h-3.5 text-slate-400 mr-1" />
                         {event.attendees.map((attendee) => (
                           <span
@@ -224,10 +267,39 @@ export const CalendarView: React.FC = () => {
                         ))}
                       </div>
                     )}
+
+                    {/* Prominent Google Meet URL display for sharing */}
+                    {event.meetUrl && !isCancelled && (
+                      <div className="pt-2 flex items-center space-x-2">
+                        <div className="flex items-center space-x-1 text-[11px] font-mono text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200 truncate max-w-sm sm:max-w-md">
+                          <Video className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
+                          <span className="truncate">{event.meetUrl}</span>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2 text-xs text-slate-700 hover:text-slate-900"
+                          onClick={() => handleCopyMeetUrl(event.id, event.meetUrl!)}
+                          title="Copy link to share with attendees"
+                        >
+                          {isCopied ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-emerald-600 mr-1" />
+                              <span className="text-emerald-700">Copied</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5 mr-1 text-slate-500" />
+                              <span>Copy Link</span>
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Actions & Meet Link */}
-                  <div className="flex items-center space-x-2 shrink-0">
+                  {/* Actions: Join Meet & Cancel */}
+                  <div className="flex items-center space-x-2 shrink-0 pt-1 sm:pt-0">
                     {event.meetUrl && !isCancelled && (
                       <Button
                         size="sm"
@@ -236,7 +308,7 @@ export const CalendarView: React.FC = () => {
                         onClick={() => window.open(event.meetUrl!, "_blank")}
                       >
                         <Video className="w-3.5 h-3.5 mr-1.5" />
-                        Join Google Meet
+                        Join Meet
                       </Button>
                     )}
 

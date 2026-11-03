@@ -6,6 +6,7 @@ import { workflowsRouter } from "./modules/workflows/workflows.routes";
 import { assistantRouter } from "./modules/ai/assistant.routes";
 import { calendarRouter } from "./modules/calendar/calendar.routes";
 import { briefingRouter } from "./modules/briefing/briefing.routes";
+import { authRouter } from "./modules/auth/auth.routes";
 import { errorHandler } from "./middleware/errorHandler";
 import { NotFoundError } from "./middleware/errors";
 
@@ -40,6 +41,7 @@ app.use("/api/workflows", workflowsRouter);
 app.use("/api/assistant", assistantRouter);
 app.use("/api/calendar", calendarRouter);
 app.use("/api/briefing", briefingRouter);
+app.use("/api/auth", authRouter);
 
 // 404 Catch-all handler for unknown endpoints
 app.use((_req, _res, next) => {

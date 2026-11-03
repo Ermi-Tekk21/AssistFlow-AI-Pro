@@ -6,10 +6,10 @@ import {
   PendingAction,
   ChatMessage,
   DailyBriefingPreview,
+  UserProfile,
+  NavTab,
 } from "../types";
 import { api } from "../lib/api";
-
-export type NavTab = "chat" | "tasks" | "reminders" | "calendar" | "briefing";
 
 interface ToastState {
   message: string;
@@ -17,9 +17,22 @@ interface ToastState {
 }
 
 interface AppState {
-  // User Authentication / Context
+  // User Authentication & Profile
+  token: string | null;
+  user: UserProfile | null;
   userId: string;
+  authLoading: boolean;
   setUserId: (id: string) => void;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => void;
+  fetchMe: () => Promise<void>;
+  updateProfile: (updates: {
+    firstName?: string;
+    lastName?: string;
+    dailyBriefingTime?: string | null;
+    dailyBriefingEnabled?: boolean;
+    timezone?: string;
+  }) => Promise<void>;
 
   // Navigation
   activeTab: NavTab;
@@ -79,16 +92,19 @@ interface AppState {
   sendBriefingNow: () => Promise<void>;
 }
 
-const DEFAULT_USER_ID =
-  import.meta.env.VITE_DEFAULT_USER_ID || "32628984-366b-4c22-8995-3222734d51bf";
-const INITIAL_USER_ID = localStorage.getItem("assistflow_user_id") || DEFAULT_USER_ID;
+const INITIAL_TOKEN = localStorage.getItem("assistflow_token");
+const INITIAL_USER_ID = localStorage.getItem("assistflow_user_id") || "";
 
 export const useStore = create<AppState>((set, get) => ({
+  // Authentication & Profile State
+  token: INITIAL_TOKEN,
+  user: null,
   userId: INITIAL_USER_ID,
+  authLoading: false,
+
   setUserId: (id: string) => {
     localStorage.setItem("assistflow_user_id", id);
     set({ userId: id });
-    // Reload all data for new user
     get().fetchTasks();
     get().fetchReminders();
     get().fetchCalendarEvents();
@@ -96,24 +112,112 @@ export const useStore = create<AppState>((set, get) => ({
     get().fetchSession();
   },
 
+  login: async (email: string, password: string): Promise<boolean> => {
+    set({ authLoading: true });
+    try {
+      const res = await api.login(email, password);
+      localStorage.setItem("assistflow_token", res.token);
+      localStorage.setItem("assistflow_user_id", res.user.id);
+
+      set({
+        token: res.token,
+        user: res.user,
+        userId: res.user.id,
+        authLoading: false,
+      });
+
+      get().showToast(`Welcome back, ${res.user.firstName || "Ermias"}!`, "success");
+
+      // Load initial dashboard data
+      get().fetchTasks();
+      get().fetchReminders();
+      get().fetchCalendarEvents();
+      get().fetchPendingActions();
+      get().fetchSession();
+
+      return true;
+    } catch (err: any) {
+      set({ authLoading: false });
+      get().showToast(err.message || "Failed to sign in", "error");
+      return false;
+    }
+  },
+
+  logout: () => {
+    localStorage.removeItem("assistflow_token");
+    localStorage.removeItem("assistflow_user_id");
+    set({
+      token: null,
+      user: null,
+      userId: "",
+      messages: [],
+      sessionId: null,
+      tasks: [],
+      reminders: [],
+      calendarEvents: [],
+      pendingActions: [],
+      activeTab: "chat",
+    });
+    get().showToast("You have been signed out.", "info");
+  },
+
+  fetchMe: async () => {
+    const { token } = get();
+    if (!token) return;
+
+    try {
+      const res = await api.getMe();
+      if (res && res.user) {
+        set({
+          user: res.user,
+          userId: res.user.id,
+        });
+        localStorage.setItem("assistflow_user_id", res.user.id);
+      }
+    } catch (err: any) {
+      console.warn("Session expired or invalid, signing out:", err.message);
+      get().logout();
+    }
+  },
+
+  updateProfile: async (updates) => {
+    set({ authLoading: true });
+    try {
+      const res = await api.updateProfile(updates);
+      set({ user: res.user, authLoading: false });
+      get().showToast("Profile settings updated successfully!", "success");
+    } catch (err: any) {
+      set({ authLoading: false });
+      get().showToast(err.message || "Failed to update profile", "error");
+    }
+  },
+
+  // Navigation
   activeTab: "chat",
   setActiveTab: (tab: NavTab) => set({ activeTab: tab }),
 
+  // Toast
   toast: null,
-  showToast: (message: string, type: "success" | "error" | "info" = "info") => {
+  showToast: (message: string, type = "info") => {
     set({ toast: { message, type } });
     setTimeout(() => {
-      set({ toast: null });
+      set((state) => {
+        if (state.toast?.message === message) {
+          return { toast: null };
+        }
+        return {};
+      });
     }, 4000);
   },
 
-  // Assistant Chat
+  // Chat
   sessionId: null,
   messages: [],
   chatLoading: false,
 
   fetchSession: async () => {
     const { userId, sessionId } = get();
+    if (!userId) return;
     try {
       const session = await api.getSession(userId, sessionId || undefined);
       if (session) {
@@ -129,7 +233,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   sendChatMessage: async (messageText: string) => {
     const { userId, sessionId, messages } = get();
-    if (!messageText.trim()) return;
+    if (!userId || !messageText.trim()) return;
 
     // Optimistic user message append
     const userMsg: ChatMessage = {
@@ -137,6 +241,7 @@ export const useStore = create<AppState>((set, get) => ({
       content: messageText,
       timestamp: new Date().toISOString(),
     };
+
     set({
       messages: [...messages, userMsg],
       chatLoading: true,
@@ -157,13 +262,11 @@ export const useStore = create<AppState>((set, get) => ({
         chatLoading: false,
       });
 
-      // Always sync pending actions and entities after each assistant turn
-      await get().fetchPendingActions();
-      await Promise.all([
-        get().fetchTasks(),
-        get().fetchReminders(),
-        get().fetchCalendarEvents(),
-      ]);
+      // Reload dashboard data
+      get().fetchPendingActions();
+      get().fetchTasks();
+      get().fetchReminders();
+      get().fetchCalendarEvents();
     } catch (err: any) {
       set({ chatLoading: false });
       get().showToast(err.message, "error");
@@ -176,6 +279,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   fetchPendingActions: async () => {
     const { userId } = get();
+    if (!userId) return;
     set({ actionsLoading: true });
     try {
       const actions = await api.getPendingActions(userId);
@@ -188,6 +292,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   confirmAction: async (actionId: string) => {
     const { userId } = get();
+    if (!userId) return;
     try {
       const res = await api.confirmPendingAction(userId, actionId);
       get().showToast(`Confirmed: ${res.action.proposal}`, "success");
@@ -203,6 +308,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   rejectAction: async (actionId: string) => {
     const { userId } = get();
+    if (!userId) return;
     try {
       const res = await api.rejectPendingAction(userId, actionId);
       get().showToast(`Cancelled: ${res.proposal}`, "info");
@@ -216,13 +322,15 @@ export const useStore = create<AppState>((set, get) => ({
   tasks: [],
   tasksLoading: false,
   taskFilter: "all",
-  setTaskFilter: (filter) => {
+
+  setTaskFilter: (filter: "all" | "pending" | "completed") => {
     set({ taskFilter: filter });
     get().fetchTasks();
   },
 
   fetchTasks: async () => {
     const { userId, taskFilter } = get();
+    if (!userId) return;
     set({ tasksLoading: true });
     try {
       const statusParam = taskFilter === "all" ? undefined : taskFilter;
@@ -236,6 +344,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   createTask: async (title: string, priority = "medium", dueAt = null) => {
     const { userId } = get();
+    if (!userId) return;
     try {
       await api.createTask(userId, { title, priority, dueAt });
       get().showToast(`Created task "${title}"`, "success");
@@ -247,6 +356,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   completeTask: async (taskId: string) => {
     const { userId } = get();
+    if (!userId) return;
     try {
       await api.completeTask(userId, taskId);
       get().showToast("Task completed!", "success");
@@ -258,6 +368,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   deleteTask: async (taskId: string) => {
     const { userId } = get();
+    if (!userId) return;
     try {
       await api.deleteTask(userId, taskId);
       get().showToast("Task deleted", "info");
@@ -273,6 +384,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   fetchReminders: async () => {
     const { userId } = get();
+    if (!userId) return;
     set({ remindersLoading: true });
     try {
       const reminders = await api.getReminders(userId);
@@ -285,6 +397,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   cancelReminder: async (reminderId: string) => {
     const { userId } = get();
+    if (!userId) return;
     try {
       await api.cancelReminder(userId, reminderId);
       get().showToast("Reminder cancelled", "info");
@@ -300,6 +413,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   fetchCalendarEvents: async () => {
     const { userId } = get();
+    if (!userId) return;
     set({ calendarLoading: true });
     try {
       const events = await api.getCalendarEvents(userId);
@@ -318,6 +432,7 @@ export const useStore = create<AppState>((set, get) => ({
     attendees?: string[]
   ) => {
     const { userId } = get();
+    if (!userId) return;
     try {
       await api.createCalendarEvent(userId, { summary, startAt, endAt, description, attendees });
       get().showToast(`Meeting "${summary}" scheduled!`, "success");
@@ -330,6 +445,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   cancelCalendarEvent: async (eventId: string) => {
     const { userId } = get();
+    if (!userId) return;
     try {
       await api.cancelCalendarEvent(userId, eventId);
       get().showToast("Meeting cancelled", "info");
@@ -346,6 +462,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   fetchBriefing: async () => {
     const { userId } = get();
+    if (!userId) return;
     set({ briefingLoading: true });
     try {
       const data = await api.getBriefingPreview(userId);
@@ -358,6 +475,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   sendBriefingNow: async () => {
     const { userId } = get();
+    if (!userId) return;
     set({ briefingLoading: true });
     try {
       await api.sendBriefing(userId, true);

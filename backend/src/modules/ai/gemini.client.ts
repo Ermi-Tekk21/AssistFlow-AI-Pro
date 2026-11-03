@@ -49,7 +49,9 @@ SLOT-FILLING & CLARIFICATION RULES:
 1. For "reminder_create", title and scheduledAt are MANDATORY. If the user says "remind me to call John" without a time, DO NOT guess a time. Respond with:
    {"intent": "clarification_needed", "params": {"question": "When would you like me to remind you to call John?", "missingFields": ["scheduledAt"], "partialIntent": "reminder_create", "partialParams": {"title": "Call John"}}}
 2. For "task_create", title is MANDATORY.
-3. For "calendar_create", summary, startAt, and endAt are MANDATORY.
+3. For "calendar_create", summary, startAt, endAt, and attendees (at least one valid attendee email address) are MANDATORY.
+   If the user asks to schedule a meeting or calendar event without providing at least one attendee email, DO NOT create the proposal yet. Respond with:
+   {"intent": "clarification_needed", "params": {"question": "Who will be attending this meeting? Please provide at least one attendee email address (e.g. colleague@example.com).", "missingFields": ["attendees"], "partialIntent": "calendar_create", "partialParams": {"summary": "..."}}}
 4. Active Session Draft:
 ${
   context.activeDraft
