@@ -42,7 +42,17 @@ export const CalendarView: React.FC = () => {
 
   useEffect(() => {
     fetchCalendarEvents();
-  }, [fetchCalendarEvents]);
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("google_connected") === "true") {
+      showToast("Google Calendar successfully connected!", "success");
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (params.get("google_error")) {
+      const err = params.get("google_error");
+      showToast(`Google Calendar Connection: ${err}`, "error");
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [fetchCalendarEvents, showToast]);
 
   const attendeesList = attendees
     .split(",")

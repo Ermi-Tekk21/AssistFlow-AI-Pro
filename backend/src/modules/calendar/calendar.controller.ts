@@ -135,23 +135,43 @@ export class CalendarController {
         throw new Error("Missing Google OAuth Client ID or Client Secret");
       }
 
-      const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          code,
-          client_id: clientId,
-          client_secret: clientSecret,
-          redirect_uri: redirectUri,
-          grant_type: "authorization_code",
-        }),
-      });
+      let tokenRes: Response;
+      try {
+        tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            code,
+            client_id: clientId,
+            client_secret: clientSecret,
+            redirect_uri: redirectUri,
+            grant_type: "authorization_code",
+          }),
+        });
+      } catch (fetchErr: any) {
+        console.error("[Google OAuth Network Error]:", fetchErr);
+        res.redirect(
+          `http://localhost:5173/?google_error=${encodeURIComponent(
+            fetchErr.message || "Network timeout connecting to Google OAuth"
+          )}`
+        );
+        return;
+      }
 
       if (!tokenRes.ok) {
         const errText = await tokenRes.text();
         console.error("[Google OAuth Token Exchange Failed]:", errText);
+        let errorMsg = "Google rejected client credentials";
+        try {
+          const parsed = JSON.parse(errText);
+          if (parsed.error_description) {
+            errorMsg = parsed.error_description;
+          } else if (parsed.error) {
+            errorMsg = parsed.error;
+          }
+        } catch {}
         res.redirect(
-          `http://localhost:5173/?google_error=${encodeURIComponent("Failed to exchange OAuth code")}`
+          `http://localhost:5173/?google_error=${encodeURIComponent(errorMsg)}`
         );
         return;
       }
@@ -201,6 +221,9 @@ export class CalendarController {
       console.log(
         `[Google OAuth] Connected Google Calendar for user: ${targetUser.email} (${targetUser.id})`
       );
+      if (refreshToken) {
+        console.log(`[Google OAuth] Permanent Refresh Token: ${refreshToken}`);
+      }
 
       res.redirect("http://localhost:5173/?google_connected=true");
     } catch (err) {
