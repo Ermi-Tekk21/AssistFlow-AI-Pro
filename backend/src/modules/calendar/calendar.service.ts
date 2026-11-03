@@ -258,6 +258,26 @@ export class CalendarService {
 
     return cancelledEvent;
   }
+
+  async deleteEventPermanently(userId: string, eventId: string): Promise<void> {
+    const event = await this.getEventById(userId, eventId);
+
+    // 1. Delete on Google Calendar API
+    try {
+      await googleCalendarClient.cancelEvent(userId, event.googleEventId);
+    } catch (err: any) {
+      console.warn("Could not cancel on Google Calendar during permanent deletion:", err.message);
+    }
+
+    // 2. Delete linked reminders
+    await this.reminderRepo.delete({ calendarEventId: event.id, userId });
+
+    // 3. Delete linked attendees
+    await this.attendeeRepo.delete({ calendarEventId: event.id });
+
+    // 4. Remove event completely from DB
+    await this.eventRepo.remove(event);
+  }
 }
 
 export const calendarService = new CalendarService();

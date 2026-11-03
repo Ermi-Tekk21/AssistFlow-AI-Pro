@@ -2,8 +2,12 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { AppDataSource } from "../../config/database";
 import { User } from "../../entities/User";
+import { IntegrationAccount } from "../../entities/IntegrationAccount";
 import { ForbiddenError, NotFoundError, UnauthorizedError, BadRequestError } from "../../middleware/errors";
 import { JWT_SECRET } from "../../middleware/auth";
+
+export const getDefaultEmail = (): string =>
+  (process.env.DEFAULT_USER_EMAIL || "ermiasteklemarkos@gmail.com").trim().toLowerCase();
 
 export interface UpdateProfileInput {
   firstName?: string;
@@ -15,23 +19,28 @@ export interface UpdateProfileInput {
 
 export class AuthService {
   private userRepo = AppDataSource.getRepository(User);
+  private accountRepo = AppDataSource.getRepository(IntegrationAccount);
 
   /**
-   * Seed or synchronize the default user Ermias Teklemarkos (ermias@gmail.com).
+   * Seed or synchronize the default administrator account from environment configuration.
    */
   public async seedDefaultUser(): Promise<User> {
-    const defaultEmail = "ermias@gmail.com";
+    const defaultEmail = getDefaultEmail();
+    const defaultFirstName = process.env.DEFAULT_USER_FIRST_NAME || "Ermias";
+    const defaultLastName = process.env.DEFAULT_USER_LAST_NAME || "Teklemarkos";
+    const rawPassword = process.env.DEFAULT_USER_PASSWORD || "password123";
+
     let user = await this.userRepo.findOne({
       where: { email: defaultEmail },
     });
 
-    const hashedPassword = await bcrypt.hash("password123", 10);
+    const hashedPassword = await bcrypt.hash(rawPassword, 10);
 
     if (!user) {
       user = this.userRepo.create({
         email: defaultEmail,
-        firstName: "Ermias",
-        lastName: "Teklemarkos",
+        firstName: defaultFirstName,
+        lastName: defaultLastName,
         passwordHash: hashedPassword,
         timezone: "Africa/Addis_Ababa",
         dailyBriefingTime: "08:00:00",
@@ -42,11 +51,11 @@ export class AuthService {
     } else {
       let modified = false;
       if (!user.firstName) {
-        user.firstName = "Ermias";
+        user.firstName = defaultFirstName;
         modified = true;
       }
       if (!user.lastName) {
-        user.lastName = "Teklemarkos";
+        user.lastName = defaultLastName;
         modified = true;
       }
       if (!user.passwordHash) {
@@ -59,11 +68,37 @@ export class AuthService {
       }
     }
 
+    // If GOOGLE_REFRESH_TOKEN is provided in environment, seed or update IntegrationAccount
+    const googleRefreshToken = process.env.GOOGLE_REFRESH_TOKEN?.trim();
+    if (googleRefreshToken) {
+      let googleAccount = await this.accountRepo.findOne({
+        where: { userId: user.id, provider: "google" },
+      });
+
+      if (!googleAccount) {
+        googleAccount = this.accountRepo.create({
+          userId: user.id,
+          provider: "google",
+          accessToken: "initial-token-pending-refresh",
+          refreshToken: googleRefreshToken,
+          expiresAt: new Date(Date.now() - 10000), // forces immediate refresh
+          scope: "https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events",
+        });
+        await this.accountRepo.save(googleAccount);
+        console.log(`[AuthService] Seeded Google IntegrationAccount from env for ${user.email}`);
+      } else if (googleAccount.refreshToken !== googleRefreshToken) {
+        googleAccount.refreshToken = googleRefreshToken;
+        googleAccount.expiresAt = new Date(Date.now() - 10000);
+        await this.accountRepo.save(googleAccount);
+        console.log(`[AuthService] Updated Google IntegrationAccount refreshToken for ${user.email}`);
+      }
+    }
+
     return user;
   }
 
   /**
-   * Sign-in restricted to the default administrator (ermias@gmail.com).
+   * Sign-in restricted to the configured default administrator account.
    */
   public async login(
     email: string,
@@ -74,11 +109,12 @@ export class AuthService {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
+    const defaultEmail = getDefaultEmail();
 
     // Restriction check per requirements: only default user is permitted
-    if (normalizedEmail !== "ermias@gmail.com") {
+    if (normalizedEmail !== defaultEmail) {
       throw new ForbiddenError(
-        "Sign-in is currently restricted to the default account (ermias@gmail.com). Self-serve registration is coming soon."
+        `Sign-in is currently restricted to the default account (${defaultEmail}). Self-serve registration is coming soon.`
       );
     }
 

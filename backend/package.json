@@ -7,6 +7,7 @@
     "start": "node dist/server.js",
     "build": "tsc",
     "test": "tsx --test --test-concurrency=1 $(find tests -name '*.test.ts')",
+    "reset:fresh": "tsx scripts/reset-db.ts",
     "typeorm": "tsx ./node_modules/typeorm/cli.js -d src/config/database.ts",
     "migration:run": "npm run typeorm migration:run",
     "migration:revert": "npm run typeorm migration:revert",

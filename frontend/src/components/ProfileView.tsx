@@ -108,7 +108,7 @@ export const ProfileView: React.FC = () => {
               </div>
               <Input
                 type="email"
-                value={user?.email || "ermias@gmail.com"}
+                value={user?.email || (import.meta.env.VITE_DEFAULT_USER_EMAIL || "ermiasteklemarkos@gmail.com")}
                 disabled
                 className="bg-slate-50 text-slate-500 font-mono text-xs cursor-not-allowed border-slate-200"
               />

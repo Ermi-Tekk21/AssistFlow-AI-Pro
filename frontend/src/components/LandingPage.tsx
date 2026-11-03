@@ -12,6 +12,9 @@ import {
   UserCheck,
 } from "lucide-react";
 
+const DEFAULT_EMAIL =
+  import.meta.env.VITE_DEFAULT_USER_EMAIL || "ermiasteklemarkos@gmail.com";
+
 export const LandingPage: React.FC = () => {
   const [isSignInOpen, setIsSignInOpen] = useState(false);
   const [isComingSoonOpen, setIsComingSoonOpen] = useState(false);
@@ -97,7 +100,7 @@ export const LandingPage: React.FC = () => {
 
           <p className="mt-3 text-xs text-slate-400">
             Default administrator profile pre-configured for{" "}
-            <span className="font-mono text-slate-600">ermias@gmail.com</span> (Ermias Teklemarkos)
+            <span className="font-mono text-slate-600">{DEFAULT_EMAIL}</span> (Ermias Teklemarkos)
           </p>
         </section>
 
