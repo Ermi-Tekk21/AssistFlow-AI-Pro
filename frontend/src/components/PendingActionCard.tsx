@@ -7,9 +7,9 @@ import { CheckCircle2, XCircle, AlertTriangle, Clock } from "lucide-react";
 import { formatDateTime } from "../lib/utils";
 
 export const PendingActionCard: React.FC = () => {
-  const { pendingActions, confirmAction, rejectAction } = useStore();
+  const { pendingActions = [], confirmAction, rejectAction } = useStore();
 
-  if (pendingActions.length === 0) return null;
+  if (!pendingActions || pendingActions.length === 0) return null;
 
   return (
     <div className="space-y-3 mb-6">

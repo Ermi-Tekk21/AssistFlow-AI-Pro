@@ -154,6 +154,8 @@ describe("Phase 6 Gemini Natural-Language Interpretation & Session Tests", () =>
 
   describe("Multi-Turn Slot Filling & Clarification Workflow", () => {
     it("should detect missing parameter, ask clarification, save session draft, and complete upon next turn", async () => {
+      const futureScheduledAt = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+
       // Mock transport simulates Gemini conversational dialogue:
       // Turn 1: User asks to remind, but no time is given -> clarification_needed
       // Turn 2: User provides time -> reminder_create completed
@@ -164,7 +166,7 @@ describe("Phase 6 Gemini Natural-Language Interpretation & Session Tests", () =>
             intent: "reminder_create",
             params: {
               title: "Call the accountant",
-              scheduledAt: "2026-11-03T11:00:00.000Z",
+              scheduledAt: futureScheduledAt,
             },
           });
         }
@@ -231,7 +233,7 @@ describe("Phase 6 Gemini Natural-Language Interpretation & Session Tests", () =>
       assert.ok(body2.data.pendingAction);
       assert.equal(body2.data.pendingAction.actionType, PendingActionType.REMINDER_CREATE);
       assert.equal(body2.data.pendingAction.payload.title, "Call the accountant");
-      assert.equal(body2.data.pendingAction.payload.scheduledAt, "2026-11-03T11:00:00.000Z");
+      assert.equal(body2.data.pendingAction.payload.scheduledAt, futureScheduledAt);
 
       // Verify activeDraft in session was cleared after intent completion
       const sessionUpdated = await sessionRepo.findOneBy({ id: sessionId });

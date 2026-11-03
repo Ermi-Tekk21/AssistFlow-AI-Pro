@@ -172,9 +172,9 @@ export const useStore = create<AppState>((set, get) => ({
     set({ actionsLoading: true });
     try {
       const actions = await api.getPendingActions(userId);
-      set({ pendingActions: actions, actionsLoading: false });
+      set({ pendingActions: Array.isArray(actions) ? actions : [], actionsLoading: false });
     } catch (err: any) {
-      set({ actionsLoading: false });
+      set({ pendingActions: [], actionsLoading: false });
       console.error("Failed to fetch pending actions:", err);
     }
   },
@@ -219,10 +219,10 @@ export const useStore = create<AppState>((set, get) => ({
     set({ tasksLoading: true });
     try {
       const statusParam = taskFilter === "all" ? undefined : taskFilter;
-      const res = await api.getTasks(userId, statusParam);
-      set({ tasks: res.tasks, tasksLoading: false });
+      const tasks = await api.getTasks(userId, statusParam);
+      set({ tasks: Array.isArray(tasks) ? tasks : [], tasksLoading: false });
     } catch (err: any) {
-      set({ tasksLoading: false });
+      set({ tasks: [], tasksLoading: false });
       get().showToast(`Failed to load tasks: ${err.message}`, "error");
     }
   },
@@ -268,10 +268,10 @@ export const useStore = create<AppState>((set, get) => ({
     const { userId } = get();
     set({ remindersLoading: true });
     try {
-      const res = await api.getReminders(userId);
-      set({ reminders: res.reminders, remindersLoading: false });
+      const reminders = await api.getReminders(userId);
+      set({ reminders: Array.isArray(reminders) ? reminders : [], remindersLoading: false });
     } catch (err: any) {
-      set({ remindersLoading: false });
+      set({ reminders: [], remindersLoading: false });
       get().showToast(`Failed to load reminders: ${err.message}`, "error");
     }
   },
@@ -296,9 +296,9 @@ export const useStore = create<AppState>((set, get) => ({
     set({ calendarLoading: true });
     try {
       const events = await api.getCalendarEvents(userId);
-      set({ calendarEvents: events, calendarLoading: false });
+      set({ calendarEvents: Array.isArray(events) ? events : [], calendarLoading: false });
     } catch (err: any) {
-      set({ calendarLoading: false });
+      set({ calendarEvents: [], calendarLoading: false });
       get().showToast(`Failed to load calendar events: ${err.message}`, "error");
     }
   },

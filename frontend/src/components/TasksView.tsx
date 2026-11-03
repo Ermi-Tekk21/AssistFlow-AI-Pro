@@ -17,9 +17,9 @@ import { formatDateTime } from "../lib/utils";
 
 export const TasksView: React.FC = () => {
   const {
-    tasks,
-    tasksLoading,
-    taskFilter,
+    tasks = [],
+    tasksLoading = false,
+    taskFilter = "all",
     setTaskFilter,
     fetchTasks,
     createTask,
@@ -157,7 +157,7 @@ export const TasksView: React.FC = () => {
           <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
           <span>Loading tasks...</span>
         </div>
-      ) : tasks.length === 0 ? (
+      ) : (tasks || []).length === 0 ? (
         <div className="bg-white border border-slate-200 rounded-lg p-12 text-center">
           <p className="text-sm font-medium text-slate-800">No tasks found</p>
           <p className="text-xs text-slate-500 mt-1">
@@ -168,7 +168,7 @@ export const TasksView: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-2">
-          {tasks.map((task) => {
+          {(tasks || []).map((task) => {
             const isCompleted = task.status === "completed";
             const isOverdue =
               !isCompleted && task.dueAt && new Date(task.dueAt).getTime() < Date.now();

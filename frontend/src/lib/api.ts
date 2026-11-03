@@ -59,9 +59,13 @@ async function request<T>(
 
 export const api = {
   // Tasks
-  async getTasks(userId: string, status?: string): Promise<{ tasks: Task[]; total: number }> {
+  async getTasks(userId: string, status?: string): Promise<Task[]> {
     const query = status ? `?status=${encodeURIComponent(status)}` : "";
-    return request<{ tasks: Task[]; total: number }>(`/api/tasks${query}`, userId);
+    const res = await request<any>(`/api/tasks${query}`, userId);
+    if (Array.isArray(res)) return res;
+    if (res && Array.isArray(res.tasks)) return res.tasks;
+    if (res && Array.isArray(res.data)) return res.data;
+    return [];
   },
 
   async createTask(
@@ -87,8 +91,12 @@ export const api = {
   },
 
   // Reminders
-  async getReminders(userId: string): Promise<{ reminders: Reminder[]; total: number }> {
-    return request<{ reminders: Reminder[]; total: number }>("/api/reminders", userId);
+  async getReminders(userId: string): Promise<Reminder[]> {
+    const res = await request<any>("/api/reminders", userId);
+    if (Array.isArray(res)) return res;
+    if (res && Array.isArray(res.reminders)) return res.reminders;
+    if (res && Array.isArray(res.data)) return res.data;
+    return [];
   },
 
   async cancelReminder(userId: string, reminderId: string): Promise<Reminder> {
@@ -99,7 +107,11 @@ export const api = {
 
   // Calendar
   async getCalendarEvents(userId: string): Promise<CalendarEvent[]> {
-    return request<CalendarEvent[]>("/api/calendar/events", userId);
+    const res = await request<any>("/api/calendar/events", userId);
+    if (Array.isArray(res)) return res;
+    if (res && Array.isArray(res.events)) return res.events;
+    if (res && Array.isArray(res.data)) return res.data;
+    return [];
   },
 
   async cancelCalendarEvent(userId: string, eventId: string): Promise<CalendarEvent> {
@@ -110,7 +122,11 @@ export const api = {
 
   // Confirmations
   async getPendingActions(userId: string): Promise<PendingAction[]> {
-    return request<PendingAction[]>("/api/confirmations?activeOnly=true", userId);
+    const res = await request<any>("/api/confirmations?activeOnly=true", userId);
+    if (Array.isArray(res)) return res;
+    if (res && Array.isArray(res.actions)) return res.actions;
+    if (res && Array.isArray(res.data)) return res.data;
+    return [];
   },
 
   async confirmPendingAction(userId: string, actionId: string): Promise<{ action: PendingAction; result: any }> {

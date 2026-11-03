@@ -6,6 +6,7 @@ import { TasksView } from "./components/TasksView";
 import { RemindersView } from "./components/RemindersView";
 import { CalendarView } from "./components/CalendarView";
 import { BriefingView } from "./components/BriefingView";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { CheckCircle2, AlertCircle, Info } from "lucide-react";
 
 export const App: React.FC = () => {
@@ -22,11 +23,13 @@ export const App: React.FC = () => {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6">
-        {activeTab === "chat" && <ChatView />}
-        {activeTab === "tasks" && <TasksView />}
-        {activeTab === "reminders" && <RemindersView />}
-        {activeTab === "calendar" && <CalendarView />}
-        {activeTab === "briefing" && <BriefingView />}
+        <ErrorBoundary>
+          {activeTab === "chat" && <ChatView />}
+          {activeTab === "tasks" && <TasksView />}
+          {activeTab === "reminders" && <RemindersView />}
+          {activeTab === "calendar" && <CalendarView />}
+          {activeTab === "briefing" && <BriefingView />}
+        </ErrorBoundary>
       </main>
 
       {/* Toast Notification */}

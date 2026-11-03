@@ -7,8 +7,8 @@ import { formatDateTime } from "../lib/utils";
 
 export const CalendarView: React.FC = () => {
   const {
-    calendarEvents,
-    calendarLoading,
+    calendarEvents = [],
+    calendarLoading = false,
     fetchCalendarEvents,
     cancelCalendarEvent,
   } = useStore();
@@ -33,7 +33,7 @@ export const CalendarView: React.FC = () => {
           <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
           <span>Loading calendar events...</span>
         </div>
-      ) : calendarEvents.length === 0 ? (
+      ) : (calendarEvents || []).length === 0 ? (
         <div className="bg-white border border-slate-200 rounded-lg p-12 text-center">
           <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2 text-slate-600">
             <Calendar className="w-5 h-5" />
@@ -45,7 +45,7 @@ export const CalendarView: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-3">
-          {calendarEvents.map((event) => {
+          {(calendarEvents || []).map((event) => {
             const isCancelled = event.status === "cancelled";
 
             return (

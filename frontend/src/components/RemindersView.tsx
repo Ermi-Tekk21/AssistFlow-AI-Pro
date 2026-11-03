@@ -5,7 +5,12 @@ import { Bell, Clock, Calendar, CheckSquare, XCircle, Loader2 } from "lucide-rea
 import { formatDateTime } from "../lib/utils";
 
 export const RemindersView: React.FC = () => {
-  const { reminders, remindersLoading, fetchReminders, cancelReminder } = useStore();
+  const {
+    reminders = [],
+    remindersLoading = false,
+    fetchReminders,
+    cancelReminder,
+  } = useStore();
 
   useEffect(() => {
     fetchReminders();
@@ -42,7 +47,7 @@ export const RemindersView: React.FC = () => {
           <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
           <span>Loading reminders...</span>
         </div>
-      ) : reminders.length === 0 ? (
+      ) : (reminders || []).length === 0 ? (
         <div className="bg-white border border-slate-200 rounded-lg p-12 text-center">
           <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2 text-slate-600">
             <Bell className="w-5 h-5" />
@@ -54,7 +59,7 @@ export const RemindersView: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-2">
-          {reminders.map((reminder) => {
+          {(reminders || []).map((reminder) => {
             const isScheduled = reminder.status === "scheduled";
 
             return (
