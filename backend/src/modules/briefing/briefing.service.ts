@@ -375,17 +375,15 @@ export class BriefingService {
       const timezone = user.timezone || "Africa/Addis_Ababa";
       const { localTimeStr } = this.getLocalDayBounds(timezone, refDate);
 
-      // Check if user's configured briefing time matches the current local hour
+      // Check if user's configured briefing time has arrived for today
       if (user.dailyBriefingTime) {
-        const configuredHour = user.dailyBriefingTime.slice(0, 2);
-        const currentLocalHour = localTimeStr.slice(0, 2);
-
-        if (configuredHour !== currentLocalHour) {
+        const configuredTime = user.dailyBriefingTime.slice(0, 5); // "HH:mm"
+        if (localTimeStr < configuredTime) {
           skipped++;
           details.push({
             userId: user.id,
             status: "skipped",
-            reason: `Local time (${localTimeStr}) does not match configured briefing time (${user.dailyBriefingTime})`,
+            reason: `Local time (${localTimeStr}) has not reached configured briefing time (${user.dailyBriefingTime})`,
           });
           continue;
         }
