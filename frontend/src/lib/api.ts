@@ -134,9 +134,25 @@ export const api = {
   },
 
   async cancelCalendarEvent(userId: string, eventId: string): Promise<CalendarEvent> {
-    return request<CalendarEvent>(`/api/calendar/events/${eventId}`, userId, {
+    return request<CalendarEvent>(`/api/calendar/events/${eventId}/cancel`, userId, {
+      method: "POST",
+    });
+  },
+
+  async deleteCalendarEventPermanently(userId: string, eventId: string): Promise<{ status: string }> {
+    return request<{ status: string }>(`/api/calendar/events/${eventId}?permanent=true`, userId, {
       method: "DELETE",
     });
+  },
+
+  async getGoogleCalendarStatus(userId: string): Promise<{ connected: boolean; hasRefreshToken: boolean }> {
+    const res = await request<any>("/api/calendar/auth/status", userId);
+    return res && res.data ? res.data : res;
+  },
+
+  async getGoogleAuthUrl(userId: string): Promise<string> {
+    const res = await request<any>(`/api/calendar/auth/url?userId=${encodeURIComponent(userId)}`, userId);
+    return res?.data?.authUrl || res?.authUrl;
   },
 
   // Confirmations

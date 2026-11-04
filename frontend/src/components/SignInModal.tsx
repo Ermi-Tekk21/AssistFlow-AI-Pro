@@ -9,9 +9,12 @@ interface SignInModalProps {
   onClose: () => void;
 }
 
+const DEFAULT_EMAIL =
+  import.meta.env.VITE_DEFAULT_USER_EMAIL || "ermiasteklemarkos@gmail.com";
+
 export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose }) => {
   const { login, authLoading } = useStore();
-  const [email, setEmail] = useState("ermias@gmail.com");
+  const [email, setEmail] = useState(DEFAULT_EMAIL);
   const [password, setPassword] = useState("password123");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -26,15 +29,15 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose }) => 
       onClose();
     } else {
       setErrorMessage(
-        email.trim().toLowerCase() !== "ermias@gmail.com"
-          ? "Access restricted: Only default user (ermias@gmail.com) can sign in currently. Self-serve registration is coming soon."
+        email.trim().toLowerCase() !== DEFAULT_EMAIL.toLowerCase()
+          ? `Access restricted: Only default user (${DEFAULT_EMAIL}) can sign in currently. Self-serve registration is coming soon.`
           : "Invalid email or password. Please verify your credentials."
       );
     }
   };
 
   const handleFillDefault = () => {
-    setEmail("ermias@gmail.com");
+    setEmail(DEFAULT_EMAIL);
     setPassword("password123");
     setErrorMessage(null);
   };
@@ -73,7 +76,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose }) => 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-slate-700 flex items-center justify-between">
               <span>Account Email</span>
-              <span className="text-[11px] text-slate-400 font-normal">Default: ermias@gmail.com</span>
+              <span className="text-[11px] text-slate-400 font-normal">Default: {DEFAULT_EMAIL}</span>
             </label>
             <div className="relative">
               <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
@@ -82,7 +85,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose }) => 
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="ermias@gmail.com"
+                placeholder={DEFAULT_EMAIL}
                 className="pl-8 text-xs font-mono"
               />
             </div>

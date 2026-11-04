@@ -3,7 +3,6 @@ import { useStore } from "../store/useStore";
 import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import { Card, CardHeader, CardTitle, CardContent } from "./ui/Card";
-import { Badge } from "./ui/Badge";
 import {
   User,
   Mail,
@@ -87,9 +86,9 @@ export const ProfileView: React.FC = () => {
             </div>
             <CardTitle className="text-xs font-semibold">User Details & Briefing Preferences</CardTitle>
           </div>
-          <Badge variant="secondary" className="font-mono text-[11px]">
+          {/* <Badge variant="secondary" className="font-mono text-[11px]">
             Single JWT Access
-          </Badge>
+          </Badge> */}
         </CardHeader>
 
         <CardContent className="pt-4">
@@ -108,7 +107,7 @@ export const ProfileView: React.FC = () => {
               </div>
               <Input
                 type="email"
-                value={user?.email || "ermias@gmail.com"}
+                value={user?.email || (import.meta.env.VITE_DEFAULT_USER_EMAIL || "ermiasteklemarkos@gmail.com")}
                 disabled
                 className="bg-slate-50 text-slate-500 font-mono text-xs cursor-not-allowed border-slate-200"
               />

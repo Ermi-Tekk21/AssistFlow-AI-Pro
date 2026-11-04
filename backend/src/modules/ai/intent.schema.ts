@@ -112,6 +112,30 @@ export const CalendarCancelIntentSchema = z.object({
   }),
 });
 
+export const CalendarUpdateIntentSchema = z.object({
+  intent: z.literal("calendar_update"),
+  params: z.object({
+    calendarEventId: z.string().uuid().optional(),
+    query: z.string().optional(),
+    summary: z.string().optional(),
+    startAt: z.string().datetime().optional(),
+    endAt: z.string().datetime().optional(),
+    description: z.string().optional(),
+    location: z.string().optional(),
+    attendees: z.array(z.string().email()).optional(),
+  }),
+});
+
+export const OverviewQueryIntentSchema = z.object({
+  intent: z.literal("overview_query"),
+  params: z.object({
+    query: z.string().optional(),
+    includeTasks: z.boolean().default(true),
+    includeCalendar: z.boolean().default(true),
+    includeReminders: z.boolean().default(true),
+  }).default({}),
+});
+
 export const DailyBriefingRequestIntentSchema = z.object({
   intent: z.literal("daily_briefing_request"),
   params: z.object({
@@ -156,7 +180,9 @@ export const AssistantIntentSchema = z.discriminatedUnion("intent", [
   ReminderCancelIntentSchema,
   CalendarListIntentSchema,
   CalendarCreateIntentSchema,
+  CalendarUpdateIntentSchema,
   CalendarCancelIntentSchema,
+  OverviewQueryIntentSchema,
   DailyBriefingRequestIntentSchema,
   ConfirmationReplyIntentSchema,
   ClarificationNeededIntentSchema,

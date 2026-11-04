@@ -10,6 +10,8 @@ import {
   Clock,
   Users,
   XCircle,
+  Trash2,
+  ExternalLink,
   Loader2,
   Plus,
   Copy,
@@ -21,9 +23,12 @@ export const CalendarView: React.FC = () => {
   const {
     calendarEvents = [],
     calendarLoading = false,
+    googleConnected = false,
     fetchCalendarEvents,
+    connectGoogleCalendar,
     createCalendarEvent,
     cancelCalendarEvent,
+    deleteCalendarEventPermanently,
     showToast,
   } = useStore();
 
@@ -37,7 +42,17 @@ export const CalendarView: React.FC = () => {
 
   useEffect(() => {
     fetchCalendarEvents();
-  }, [fetchCalendarEvents]);
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("google_connected") === "true") {
+      showToast("Google Calendar successfully connected!", "success");
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (params.get("google_error")) {
+      const err = params.get("google_error");
+      showToast(`Google Calendar Connection: ${err}`, "error");
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [fetchCalendarEvents, showToast]);
 
   const attendeesList = attendees
     .split(",")
@@ -100,6 +115,40 @@ export const CalendarView: React.FC = () => {
           <Plus className="w-4 h-4 mr-1.5" />
           {isAdding ? "Cancel" : "Add Meeting"}
         </Button>
+      </div>
+
+      {/* Google Calendar Connection Status Banner */}
+      <div
+        className={`p-3 rounded-lg border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 text-xs ${
+          googleConnected
+            ? "bg-emerald-50 border-emerald-200 text-emerald-900"
+            : "bg-amber-50 border-amber-200 text-amber-900"
+        }`}
+      >
+        <div className="flex items-center space-x-2">
+          <Calendar className="w-4 h-4 shrink-0 text-slate-700" />
+          <div>
+            <span className="font-semibold">
+              {googleConnected ? "Google Calendar Synchronized" : "Google Calendar Not Connected"}
+            </span>
+            <span className="text-[11px] block sm:inline sm:ml-2 opacity-80">
+              {googleConnected
+                ? "Live sync enabled with phone and real Google Meet video rooms."
+                : "Connect your Google account to create real functional Google Meet rooms and sync directly with your phone."}
+            </span>
+          </div>
+        </div>
+
+        {!googleConnected && (
+          <Button
+            size="sm"
+            onClick={connectGoogleCalendar}
+            className="shrink-0 text-xs bg-slate-900 hover:bg-slate-800 text-white"
+          >
+            <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+            Connect Google Calendar
+          </Button>
+        )}
       </div>
 
       {/* New Meeting Inline Form */}
@@ -298,7 +347,7 @@ export const CalendarView: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Actions: Join Meet & Cancel */}
+                  {/* Actions: Join Meet, Cancel, and Delete Permanently */}
                   <div className="flex items-center space-x-2 shrink-0 pt-1 sm:pt-0">
                     {event.meetUrl && !isCancelled && (
                       <Button
@@ -315,12 +364,28 @@ export const CalendarView: React.FC = () => {
                     {!isCancelled && (
                       <button
                         onClick={() => cancelCalendarEvent(event.id)}
-                        className="text-slate-400 hover:text-red-600 transition-colors p-1.5 rounded hover:bg-slate-100"
+                        className="text-slate-400 hover:text-amber-600 transition-colors p-1.5 rounded hover:bg-slate-100"
                         title="Cancel meeting"
                       >
                         <XCircle className="w-4 h-4" />
                       </button>
                     )}
+
+                    <button
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            `Permanently delete "${event.title}" totally from database and calendar?`
+                          )
+                        ) {
+                          deleteCalendarEventPermanently(event.id);
+                        }
+                      }}
+                      className="text-slate-400 hover:text-red-600 transition-colors p-1.5 rounded hover:bg-slate-100"
+                      title="Delete totally"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               </div>

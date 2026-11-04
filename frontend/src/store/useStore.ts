@@ -75,7 +75,10 @@ interface AppState {
   // Calendar
   calendarEvents: CalendarEvent[];
   calendarLoading: boolean;
+  googleConnected: boolean;
   fetchCalendarEvents: () => Promise<void>;
+  checkGoogleStatus: () => Promise<void>;
+  connectGoogleCalendar: () => Promise<void>;
   createCalendarEvent: (
     summary: string,
     startAt: string,
@@ -84,6 +87,7 @@ interface AppState {
     attendees?: string[]
   ) => Promise<void>;
   cancelCalendarEvent: (eventId: string) => Promise<void>;
+  deleteCalendarEventPermanently: (eventId: string) => Promise<void>;
 
   // Daily Briefing
   briefing: DailyBriefingPreview | null;
@@ -410,11 +414,37 @@ export const useStore = create<AppState>((set, get) => ({
   // Calendar
   calendarEvents: [],
   calendarLoading: false,
+  googleConnected: false,
+
+  checkGoogleStatus: async () => {
+    const { userId } = get();
+    if (!userId) return;
+    try {
+      const res = await api.getGoogleCalendarStatus(userId);
+      set({ googleConnected: !!res?.connected });
+    } catch {
+      set({ googleConnected: false });
+    }
+  },
+
+  connectGoogleCalendar: async () => {
+    const { userId } = get();
+    if (!userId) return;
+    try {
+      const authUrl = await api.getGoogleAuthUrl(userId);
+      if (authUrl) {
+        window.location.href = authUrl;
+      }
+    } catch (err: any) {
+      get().showToast(`Failed to initialize Google OAuth: ${err.message}`, "error");
+    }
+  },
 
   fetchCalendarEvents: async () => {
     const { userId } = get();
     if (!userId) return;
     set({ calendarLoading: true });
+    get().checkGoogleStatus();
     try {
       const events = await api.getCalendarEvents(userId);
       set({ calendarEvents: Array.isArray(events) ? events : [], calendarLoading: false });
@@ -448,7 +478,20 @@ export const useStore = create<AppState>((set, get) => ({
     if (!userId) return;
     try {
       await api.cancelCalendarEvent(userId, eventId);
-      get().showToast("Meeting cancelled", "info");
+      get().showToast("Meeting marked as cancelled", "info");
+      await get().fetchCalendarEvents();
+      await get().fetchReminders();
+    } catch (err: any) {
+      get().showToast(err.message, "error");
+    }
+  },
+
+  deleteCalendarEventPermanently: async (eventId: string) => {
+    const { userId } = get();
+    if (!userId) return;
+    try {
+      await api.deleteCalendarEventPermanently(userId, eventId);
+      get().showToast("Meeting permanently deleted", "info");
       await get().fetchCalendarEvents();
       await get().fetchReminders();
     } catch (err: any) {

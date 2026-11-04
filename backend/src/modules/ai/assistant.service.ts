@@ -79,6 +79,101 @@ export class AssistantService {
     return await this.sessionRepo.save(newSession);
   }
 
+  private formatUserTime(dateInput?: string | Date | null, timezone = "Africa/Addis_Ababa"): string {
+    if (!dateInput) return "";
+    try {
+      const d = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+      if (isNaN(d.getTime())) return String(dateInput);
+
+      const timeStr = d.toLocaleTimeString("en-US", {
+        timeZone: timezone,
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      });
+
+      const dateStr = d.toLocaleDateString("en-US", {
+        timeZone: timezone,
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+
+      return `${timeStr} EAT (${dateStr})`;
+    } catch {
+      return String(dateInput);
+    }
+  }
+
+  private async findCalendarEventByQuery(
+    userId: string,
+    query?: string,
+    eventId?: string
+  ): Promise<CalendarEvent | null> {
+    if (eventId) {
+      return await this.calendarRepo.findOne({
+        where: { id: eventId, userId },
+        relations: { attendees: true },
+      });
+    }
+
+    if (!query) return null;
+
+    const allEvents = await this.calendarRepo.find({
+      where: { userId, status: CalendarEventStatus.CONFIRMED },
+      relations: { attendees: true },
+      order: { startAt: "ASC" },
+    });
+
+    if (allEvents.length === 0) return null;
+
+    const stopWords = new Set([
+      "move",
+      "my",
+      "the",
+      "a",
+      "an",
+      "with",
+      "from",
+      "to",
+      "at",
+      "for",
+      "please",
+      "meeting",
+      "cancel",
+    ]);
+    const terms = query
+      .toLowerCase()
+      .split(/[^a-zA-Z0-9@.-]+/)
+      .filter((w) => w.length > 1 && !stopWords.has(w));
+
+    let bestEvent: CalendarEvent | null = null;
+    let maxScore = 0;
+
+    for (const ev of allEvents) {
+      let score = 0;
+      const titleLower = ev.title.toLowerCase();
+      const attendeeEmails = (ev.attendees || []).map((a) => a.email.toLowerCase()).join(" ");
+
+      if (titleLower.includes(query.toLowerCase())) {
+        score += 10;
+      }
+
+      for (const term of terms) {
+        if (titleLower.includes(term)) score += 3;
+        if (attendeeEmails.includes(term)) score += 4;
+      }
+
+      if (score > maxScore) {
+        maxScore = score;
+        bestEvent = ev;
+      }
+    }
+
+    return maxScore > 0 ? bestEvent : null;
+  }
+
   async processMessage(
     userId: string,
     message: string,
@@ -103,16 +198,32 @@ export class AssistantService {
     const isPendingActive =
       activePendingAction != null && activePendingAction.expiresAt.getTime() > Date.now();
 
-    const context: GeminiContext = {
-      currentUtcTimestamp: new Date().toISOString(),
-      userTimezone: user.timezone || "Africa/Addis_Ababa",
-      history: session.messages,
-      activeDraft: session.activeDraft,
-      hasPendingConfirmation: isPendingActive,
-    };
+    // Fast-path resolution for direct affirmative/negative replies when a confirmation is pending
+    const trimmed = message.trim().toLowerCase();
+    const isAffirmative = /^(yes|y|yeah|yup|sure|ok|okay|confirm|proceed|accept|do it)$/i.test(trimmed);
+    const isNegative = /^(no|n|nope|cancel|reject|deny|abort|never mind|dont|don't)$/i.test(trimmed);
 
-    // Interpret with Gemini
-    const intentResult = await geminiClient.interpret(message, context);
+    let intentResult: AssistantIntent;
+    if (isPendingActive && (isAffirmative || isNegative)) {
+      intentResult = {
+        intent: "confirmation_reply",
+        params: {
+          confirmed: isAffirmative,
+          actionId: activePendingAction?.id,
+        },
+      };
+    } else {
+      const context: GeminiContext = {
+        currentUtcTimestamp: new Date().toISOString(),
+        userTimezone: user.timezone || "Africa/Addis_Ababa",
+        history: session.messages,
+        activeDraft: session.activeDraft,
+        hasPendingConfirmation: isPendingActive,
+      };
+
+      // Interpret with Gemini
+      intentResult = await geminiClient.interpret(message, context);
+    }
 
     let responseText = "";
     let proposedPendingAction: PendingAction | null = null;
@@ -177,7 +288,7 @@ export class AssistantService {
       case "task_create": {
         session.activeDraft = null;
         const { title, description, priority, dueAt } = intentResult.params;
-        const dueFormatted = dueAt ? ` due ${dueAt}` : "";
+        const dueFormatted = dueAt ? ` due ${this.formatUserTime(dueAt, user.timezone)}` : "";
         const proposal = `Create task "${title}" with priority ${priority}${dueFormatted}`;
 
         proposedPendingAction = await confirmationsService.proposeAction(userId, {
@@ -313,7 +424,7 @@ export class AssistantService {
       case "reminder_create": {
         session.activeDraft = null;
         const { title, scheduledAt, description } = intentResult.params;
-        const proposal = `Schedule reminder "${title}" for ${scheduledAt}`;
+        const proposal = `Schedule reminder "${title}" for ${this.formatUserTime(scheduledAt, user.timezone)}`;
 
         proposedPendingAction = await confirmationsService.proposeAction(userId, {
           actionType: PendingActionType.REMINDER_CREATE,
@@ -500,7 +611,7 @@ export class AssistantService {
 
         session.activeDraft = null;
         const attendeesStr = attendees.join(", ");
-        const proposal = `Create meeting "${summary}" from ${startAt} to ${endAt} with attendees: ${attendeesStr}`;
+        const proposal = `Create meeting "${summary}" from ${this.formatUserTime(startAt, user.timezone)} to ${this.formatUserTime(endAt, user.timezone)} with attendees: ${attendeesStr}`;
 
         proposedPendingAction = await confirmationsService.proposeAction(userId, {
           actionType: PendingActionType.CALENDAR_EVENT_CREATE,
@@ -513,22 +624,13 @@ export class AssistantService {
         break;
       }
 
-      case "calendar_cancel": {
+      case "calendar_update": {
         session.activeDraft = null;
-        let event: CalendarEvent | null = null;
-        if (intentResult.params.calendarEventId) {
-          event = await this.calendarRepo.findOne({
-            where: { id: intentResult.params.calendarEventId, userId },
-          });
-        } else if (intentResult.params.query) {
-          event = await this.calendarRepo
-            .createQueryBuilder("e")
-            .where("e.userId = :userId", { userId })
-            .andWhere("e.status = :status", { status: CalendarEventStatus.CONFIRMED })
-            .andWhere("e.title ILIKE :q", { q: `%${intentResult.params.query}%` })
-            .orderBy("e.startAt", "ASC")
-            .getOne();
-        }
+        const event = await this.findCalendarEventByQuery(
+          userId,
+          intentResult.params.query,
+          intentResult.params.calendarEventId
+        );
 
         if (!event) {
           responseText = `Could not find an upcoming meeting matching "${
@@ -537,7 +639,103 @@ export class AssistantService {
           break;
         }
 
-        const proposal = `Cancel meeting "${event.title}" scheduled for ${event.startAt.toISOString()}`;
+        const updates: any = {};
+        if (intentResult.params.summary) updates.summary = intentResult.params.summary;
+        if (intentResult.params.startAt) updates.startAt = intentResult.params.startAt;
+        if (intentResult.params.endAt) updates.endAt = intentResult.params.endAt;
+        if (intentResult.params.description !== undefined)
+          updates.description = intentResult.params.description;
+        if (intentResult.params.location !== undefined)
+          updates.location = intentResult.params.location;
+        if (intentResult.params.attendees) updates.attendees = intentResult.params.attendees;
+
+        // Preserve meeting duration if startAt changed without explicit endAt
+        if (updates.startAt && !updates.endAt) {
+          const originalDurationMs = event.endAt.getTime() - event.startAt.getTime();
+          const duration = originalDurationMs > 0 ? originalDurationMs : 60 * 60 * 1000;
+          updates.endAt = new Date(new Date(updates.startAt).getTime() + duration).toISOString();
+        }
+
+        const timeChangeStr = updates.startAt ? ` to ${this.formatUserTime(updates.startAt, user.timezone)}` : "";
+        const proposal = `Reschedule meeting "${event.title}"${timeChangeStr}`;
+
+        proposedPendingAction = await confirmationsService.proposeAction(userId, {
+          actionType: PendingActionType.CALENDAR_EVENT_UPDATE,
+          proposal,
+          payload: { id: event.id, input: updates },
+          targetEntityId: event.id,
+          targetEntityType: "calendar_event",
+          expiresInMinutes: 10,
+        });
+
+        responseText = `I prepared this update proposal:\n"${proposal}"\n\nWould you like me to update this meeting? (yes/no)`;
+        break;
+      }
+
+      case "overview_query": {
+        session.activeDraft = null;
+        const now = new Date();
+        const startOfToday = new Date(now);
+        startOfToday.setUTCHours(0, 0, 0, 0);
+        const endOfWeek = new Date(startOfToday.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+        const upcomingEvents = await this.calendarRepo
+          .createQueryBuilder("e")
+          .where("e.userId = :userId", { userId })
+          .andWhere("e.status = :status", { status: CalendarEventStatus.CONFIRMED })
+          .andWhere("e.startAt >= :startOfToday AND e.startAt <= :endOfWeek", { startOfToday, endOfWeek })
+          .orderBy("e.startAt", "ASC")
+          .getMany();
+
+        const pendingTasks = await this.taskRepo.find({
+          where: { userId, status: TaskStatus.PENDING },
+          order: { priority: "DESC", dueAt: "ASC" },
+          take: 10,
+        });
+
+        let overview = `Here is your summary for this week:\n\n`;
+        overview += `📅 Scheduled Meetings (${upcomingEvents.length}):\n`;
+        if (upcomingEvents.length === 0) {
+          overview += "  No meetings scheduled for this week.\n";
+        } else {
+          upcomingEvents.forEach((e) => {
+            overview += `  • ${e.title} (${this.formatUserTime(e.startAt, user.timezone)})${
+              e.meetUrl ? ` [Meet: ${e.meetUrl}]` : ""
+            }\n`;
+          });
+        }
+
+        overview += `\n📋 Pending Tasks (${pendingTasks.length}):\n`;
+        if (pendingTasks.length === 0) {
+          overview += "  No pending tasks.\n";
+        } else {
+          pendingTasks.forEach((t) => {
+            overview += `  • [${t.priority.toUpperCase()}] ${t.title}${
+              t.dueAt ? ` (Due: ${this.formatUserTime(t.dueAt, user.timezone)})` : ""
+            }\n`;
+          });
+        }
+
+        responseText = overview.trim();
+        break;
+      }
+
+      case "calendar_cancel": {
+        session.activeDraft = null;
+        const event = await this.findCalendarEventByQuery(
+          userId,
+          intentResult.params.query,
+          intentResult.params.calendarEventId
+        );
+
+        if (!event) {
+          responseText = `Could not find an upcoming meeting matching "${
+            intentResult.params.query || intentResult.params.calendarEventId
+          }".`;
+          break;
+        }
+
+        const proposal = `Cancel meeting "${event.title}" scheduled for ${this.formatUserTime(event.startAt, user.timezone)}`;
         proposedPendingAction = await confirmationsService.proposeAction(userId, {
           actionType: PendingActionType.CALENDAR_EVENT_CANCEL,
           proposal,
@@ -560,14 +758,13 @@ export class AssistantService {
         });
 
         const now = new Date();
-        const endOfDay = new Date(now);
-        endOfDay.setUTCHours(23, 59, 59, 999);
+        const nextHorizon = new Date(now.getTime() + 48 * 60 * 60 * 1000);
 
         const todayReminders = await this.reminderRepo
           .createQueryBuilder("r")
           .where("r.userId = :userId", { userId })
           .andWhere("r.status = :status", { status: ReminderStatus.SCHEDULED })
-          .andWhere("r.scheduledAt <= :endOfDay", { endOfDay })
+          .andWhere("r.scheduledAt <= :nextHorizon", { nextHorizon })
           .orderBy("r.scheduledAt", "ASC")
           .getMany();
 
@@ -575,7 +772,7 @@ export class AssistantService {
           .createQueryBuilder("e")
           .where("e.userId = :userId", { userId })
           .andWhere("e.status = :status", { status: CalendarEventStatus.CONFIRMED })
-          .andWhere("e.startAt <= :endOfDay", { endOfDay })
+          .andWhere("e.startAt <= :nextHorizon", { nextHorizon })
           .orderBy("e.startAt", "ASC")
           .getMany();
 
@@ -587,7 +784,7 @@ export class AssistantService {
         } else {
           pendingTasks.forEach((t) => {
             briefingText += `  • [${t.priority.toUpperCase()}] ${t.title}${
-              t.dueAt ? ` (Due: ${new Date(t.dueAt).toLocaleTimeString()})` : ""
+              t.dueAt ? ` (Due: ${this.formatUserTime(t.dueAt, user.timezone)})` : ""
             }\n`;
           });
         }
@@ -597,7 +794,7 @@ export class AssistantService {
           briefingText += "  No scheduled reminders for today.\n";
         } else {
           todayReminders.forEach((r) => {
-            briefingText += `  • ${r.title} at ${new Date(r.scheduledAt).toLocaleTimeString()}\n`;
+            briefingText += `  • ${r.title} at ${this.formatUserTime(r.scheduledAt, user.timezone)}\n`;
           });
         }
 
@@ -606,12 +803,13 @@ export class AssistantService {
           briefingText += "  No scheduled meetings for today.\n";
         } else {
           todayEvents.forEach((e) => {
-            briefingText += `  • ${e.title} at ${new Date(e.startAt).toLocaleTimeString()}${
+            briefingText += `  • ${e.title} at ${this.formatUserTime(e.startAt, user.timezone)}${
               e.meetUrl ? ` (Meet: ${e.meetUrl})` : ""
             }\n`;
           });
         }
 
+        briefingText += "\nHave a productive day!";
         responseText = briefingText;
         extraData = {
           taskCount: pendingTasks.length,
