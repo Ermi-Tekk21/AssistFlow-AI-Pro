@@ -64,8 +64,9 @@ export class GoogleCalendarClient {
       return "simulated-oauth-token";
     }
 
-    // Check if token is expired and needs refresh
-    if (account.expiresAt && account.expiresAt.getTime() <= Date.now() + 60000 && account.refreshToken) {
+    // Check if token is expired (or expires within 60s) and needs refresh
+    const isExpired = !account.expiresAt || account.expiresAt.getTime() <= Date.now() + 60000;
+    if (isExpired && account.refreshToken) {
       try {
         const refreshed = await this.refreshAccessToken(account.refreshToken);
         account.accessToken = refreshed.accessToken;
@@ -73,8 +74,8 @@ export class GoogleCalendarClient {
         await accountRepo.save(account);
         return account.accessToken;
       } catch (refreshErr: any) {
-        console.warn("Failed to refresh Google OAuth token:", refreshErr?.message || refreshErr);
-        // If we still have an access token, try using it; otherwise fall back to simulated token
+        console.warn("[GoogleCalendar] Proactive token refresh failed:", refreshErr?.message || refreshErr);
+        // If we still have an access token, try using it; otherwise fall back
         if (account.accessToken && account.accessToken !== "simulated-oauth-token") {
           return account.accessToken;
         }
@@ -82,6 +83,24 @@ export class GoogleCalendarClient {
       }
     }
 
+    return account.accessToken;
+  }
+
+  public async forceRefreshToken(userId: string): Promise<string> {
+    const accountRepo = AppDataSource.getRepository(IntegrationAccount);
+    const account = await accountRepo.findOne({
+      where: { userId, provider: "google" },
+    });
+
+    if (!account || !account.refreshToken) {
+      throw new Error("No Google refresh token available to refresh access token");
+    }
+
+    const refreshed = await this.refreshAccessToken(account.refreshToken);
+    account.accessToken = refreshed.accessToken;
+    account.expiresAt = new Date(Date.now() + refreshed.expiresIn * 1000);
+    await accountRepo.save(account);
+    console.log(`[GoogleCalendar] Successfully refreshed Google access token for user ${userId}.`);
     return account.accessToken;
   }
 
@@ -137,7 +156,7 @@ export class GoogleCalendarClient {
     userId: string,
     options: { timeMin?: string; timeMax?: string; maxResults?: number } = {}
   ): Promise<GoogleCalendarEventResponse[]> {
-    const token = await this.getValidAccessToken(userId);
+    let token = await this.getValidAccessToken(userId);
 
     if (this.customTransport) {
       return await this.customTransport.listEvents(token, options);
@@ -155,14 +174,27 @@ export class GoogleCalendarClient {
     query.set("orderBy", "startTime");
 
     const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?${query.toString()}`;
+    const makeRequest = async (authToken: string) => {
+      return await fetch(url, {
+        headers: { Authorization: `Bearer ${authToken}` },
+        signal: AbortSignal.timeout(10000),
+      });
+    };
+
     let res: Response;
     try {
-      res = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-        signal: AbortSignal.timeout(8000),
-      });
+      res = await makeRequest(token);
     } catch {
       return [];
+    }
+
+    if (res.status === 401) {
+      try {
+        token = await this.forceRefreshToken(userId);
+        res = await makeRequest(token);
+      } catch {
+        return [];
+      }
     }
 
     if (!res.ok) {
@@ -180,13 +212,13 @@ export class GoogleCalendarClient {
     userId: string,
     payload: GoogleCalendarEventPayload
   ): Promise<GoogleCalendarEventResponse> {
-    const token = await this.getValidAccessToken(userId);
+    let token = await this.getValidAccessToken(userId);
 
     if (this.customTransport) {
       return await this.customTransport.createEvent(token, payload);
     }
 
-    const generateSimulatedMeeting = () => {
+    if (token === "simulated-oauth-token") {
       const meetCode = `${Math.random().toString(36).substring(2, 5)}-${Math.random()
         .toString(36)
         .substring(2, 6)}-${Math.random().toString(36).substring(2, 5)}`;
@@ -201,10 +233,6 @@ export class GoogleCalendarClient {
         attendees: payload.attendees?.map((a) => ({ ...a, responseStatus: "accepted" })),
         status: "confirmed",
       };
-    };
-
-    if (token === "simulated-oauth-token") {
-      return generateSimulatedMeeting();
     }
 
     // Include Google Meet conference request
@@ -218,43 +246,43 @@ export class GoogleCalendarClient {
       },
     };
 
-    const url = "https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1";
-    let res: Response | null = null;
-    let networkError: any = null;
+    // Notice sendUpdates=all instructs Google Calendar to send invitations & updates to all attendees
+    const url =
+      "https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1&sendUpdates=all";
 
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      try {
-        res = await fetch(url, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(eventWithConference),
-          signal: AbortSignal.timeout(10000),
-        });
-        networkError = null;
-        break;
-      } catch (err: any) {
-        networkError = err;
-        if (attempt < 2) {
-          await new Promise((r) => setTimeout(r, 600));
-        }
-      }
+    const makeRequest = async (authToken: string) => {
+      return await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(eventWithConference),
+        signal: AbortSignal.timeout(12000),
+      });
+    };
+
+    let res: Response;
+    try {
+      res = await makeRequest(token);
+    } catch (networkErr: any) {
+      await new Promise((r) => setTimeout(r, 600));
+      res = await makeRequest(token);
     }
 
-    if (networkError || !res) {
-      console.warn("Google Calendar network issue, falling back to simulated meeting:", networkError?.message);
-      return generateSimulatedMeeting();
+    // If 401 Unauthorized, automatically refresh access token and retry the Google API call
+    if (res.status === 401) {
+      console.warn("[GoogleCalendar] Received 401 Unauthorized. Force refreshing token and retrying event creation...");
+      try {
+        token = await this.forceRefreshToken(userId);
+        res = await makeRequest(token);
+      } catch (refreshErr: any) {
+        console.error("[GoogleCalendar] Failed to force-refresh token after 401:", refreshErr.message);
+      }
     }
 
     if (!res.ok) {
       const errBody = await res.text().catch(() => "");
-      // If token expired or unauthorized, fallback to simulated meeting with Meet link
-      if (res.status === 401 || res.status === 403) {
-        console.warn("Google OAuth credentials invalid/expired, falling back to simulated meeting.");
-        return generateSimulatedMeeting();
-      }
       throw new Error(`Google Calendar API create error (status ${res.status}): ${errBody}`);
     }
 
@@ -266,7 +294,7 @@ export class GoogleCalendarClient {
     googleEventId: string,
     payload: Partial<GoogleCalendarEventPayload>
   ): Promise<GoogleCalendarEventResponse> {
-    const token = await this.getValidAccessToken(userId);
+    let token = await this.getValidAccessToken(userId);
 
     if (this.customTransport) {
       return await this.customTransport.updateEvent(token, googleEventId, payload);
@@ -285,43 +313,39 @@ export class GoogleCalendarClient {
 
     const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(
       googleEventId
-    )}?conferenceDataVersion=1`;
+    )}?conferenceDataVersion=1&sendUpdates=all`;
 
-    let res: Response;
-    try {
-      res = await fetch(url, {
+    const makeRequest = async (authToken: string) => {
+      return await fetch(url, {
         method: "PATCH",
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${authToken}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(12000),
       });
+    };
+
+    let res: Response;
+    try {
+      res = await makeRequest(token);
     } catch (networkErr: any) {
-      console.warn("Google Calendar PATCH network issue, updating locally:", networkErr?.message);
-      return {
-        id: googleEventId,
-        summary: payload.summary || "",
-        description: payload.description,
-        start: payload.start || {},
-        end: payload.end || {},
-        status: "confirmed",
-      };
+      await new Promise((r) => setTimeout(r, 600));
+      res = await makeRequest(token);
+    }
+
+    if (res.status === 401) {
+      console.warn("[GoogleCalendar] Received 401 Unauthorized. Force refreshing token and retrying event update...");
+      try {
+        token = await this.forceRefreshToken(userId);
+        res = await makeRequest(token);
+      } catch (refreshErr: any) {
+        console.error("[GoogleCalendar] Failed to force-refresh token after 401:", refreshErr.message);
+      }
     }
 
     if (!res.ok) {
-      if (res.status === 401 || res.status === 403 || res.status === 404) {
-        console.warn(`Google Calendar API update status ${res.status}, updating locally.`);
-        return {
-          id: googleEventId,
-          summary: payload.summary || "",
-          description: payload.description,
-          start: payload.start || {},
-          end: payload.end || {},
-          status: "confirmed",
-        };
-      }
       const errBody = await res.text().catch(() => "");
       throw new Error(`Google Calendar API update error (status ${res.status}): ${errBody}`);
     }
@@ -330,7 +354,7 @@ export class GoogleCalendarClient {
   }
 
   async cancelEvent(userId: string, googleEventId: string): Promise<void> {
-    const token = await this.getValidAccessToken(userId);
+    let token = await this.getValidAccessToken(userId);
 
     if (this.customTransport) {
       return await this.customTransport.deleteEvent(token, googleEventId);
@@ -342,25 +366,35 @@ export class GoogleCalendarClient {
 
     const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(
       googleEventId
-    )}`;
+    )}?sendUpdates=all`;
+
+    const makeRequest = async (authToken: string) => {
+      return await fetch(url, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${authToken}` },
+        signal: AbortSignal.timeout(12000),
+      });
+    };
 
     let res: Response;
     try {
-      res = await fetch(url, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-        signal: AbortSignal.timeout(8000),
-      });
+      res = await makeRequest(token);
     } catch (networkErr: any) {
-      console.warn("Google Calendar DELETE network issue, proceeding locally:", networkErr?.message);
-      return;
+      await new Promise((r) => setTimeout(r, 600));
+      res = await makeRequest(token);
+    }
+
+    if (res.status === 401) {
+      console.warn("[GoogleCalendar] Received 401 Unauthorized. Force refreshing token and retrying event delete...");
+      try {
+        token = await this.forceRefreshToken(userId);
+        res = await makeRequest(token);
+      } catch (refreshErr: any) {
+        console.error("[GoogleCalendar] Failed to force-refresh token after 401:", refreshErr.message);
+      }
     }
 
     if (!res.ok && res.status !== 404 && res.status !== 410) {
-      if (res.status === 401 || res.status === 403) {
-        console.warn(`Google Calendar DELETE status ${res.status}, proceeding locally.`);
-        return;
-      }
       const errBody = await res.text().catch(() => "");
       throw new Error(`Google Calendar API delete error (status ${res.status}): ${errBody}`);
     }
