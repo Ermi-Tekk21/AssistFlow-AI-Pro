@@ -50,10 +50,7 @@ export const AppDataSource = new DataSource({
     DailyBriefingRecord,
   ],
 
-  migrations: [
-    __dirname + "/../migrations/*{.ts,.js}",
-    __dirname + "/../../migrations/*{.ts,.js}",
-  ],
+  migrations: [__dirname + "/../migrations/*{.ts,.js}"],
 
   synchronize: false,
 
