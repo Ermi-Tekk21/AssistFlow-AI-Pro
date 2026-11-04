@@ -49,7 +49,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose }) => 
         <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-[#0B132B]">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300">
-              <Lock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <Lock className="w-4 h-4 text-slate-700 dark:text-blue-400" />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Sign In to AssistFlow AI</h3>
@@ -117,7 +117,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose }) => 
             <button
               type="button"
               onClick={handleFillDefault}
-              className="text-[11px] font-medium text-blue-600 dark:text-blue-400 underline hover:text-blue-700 dark:hover:text-blue-300 ml-2"
+              className="text-[11px] font-medium text-slate-900 underline hover:text-slate-700 dark:text-blue-400 dark:hover:text-blue-300 ml-2"
             >
               Fill Default
             </button>

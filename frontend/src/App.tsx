@@ -16,10 +16,21 @@ export const App: React.FC = () => {
     token,
     activeTab,
     toast,
+    theme,
     fetchPendingActions,
     fetchSession,
     fetchMe,
   } = useStore();
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      if (theme === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    }
+  }, [theme]);
 
   useEffect(() => {
     if (token) {

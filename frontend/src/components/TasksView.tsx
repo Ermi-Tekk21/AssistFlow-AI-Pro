@@ -72,7 +72,7 @@ export const TasksView: React.FC = () => {
               onClick={() => setTaskFilter(filter)}
               className={`px-3 py-1 rounded text-xs font-medium capitalize transition-colors ${
                 taskFilter === filter
-                  ? "bg-blue-600 text-white shadow-xs"
+                  ? "bg-slate-900 text-white dark:bg-blue-600 shadow-xs"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
@@ -118,7 +118,7 @@ export const TasksView: React.FC = () => {
                       onClick={() => setNewPriority(p)}
                       className={`text-xs px-2.5 py-1 rounded border capitalize transition-colors ${
                         newPriority === p
-                          ? "bg-blue-600 text-white border-blue-600"
+                          ? "bg-slate-900 text-white border-slate-900 dark:bg-blue-600 dark:border-blue-600"
                           : "bg-white dark:bg-[#0B132B] text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
                       }`}
                     >

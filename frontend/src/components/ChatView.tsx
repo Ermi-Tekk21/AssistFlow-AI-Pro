@@ -44,7 +44,7 @@ export const ChatView: React.FC = () => {
         {messages.length === 0 ? (
           <div className="text-center py-16 px-4">
             <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800/80 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-700 dark:text-slate-200">
-              <Bot className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              <Bot className="w-6 h-6 text-slate-700 dark:text-blue-400" />
             </div>
             <h3 className="text-sm font-semibold text-slate-800 dark:text-white">
               AssistFlow AI Executive Assistant
@@ -62,7 +62,7 @@ export const ChatView: React.FC = () => {
                   }}
                   className="text-xs bg-white dark:bg-[#0F172A] hover:bg-slate-100 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-full px-3 py-1.5 transition-colors flex items-center text-left"
                 >
-                  <Sparkles className="w-3 h-3 mr-1.5 text-blue-500 dark:text-blue-400" />
+                  <Sparkles className="w-3 h-3 mr-1.5 text-slate-400 dark:text-blue-400" />
                   {prompt}
                 </button>
               ))}
@@ -79,7 +79,7 @@ export const ChatView: React.FC = () => {
                 }`}
               >
                 {!isUser && (
-                  <div className="w-7 h-7 rounded-md bg-blue-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                  <div className="w-7 h-7 rounded-md bg-slate-900 dark:bg-blue-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
                     <Bot className="w-4 h-4" />
                   </div>
                 )}
@@ -87,7 +87,7 @@ export const ChatView: React.FC = () => {
                 <div
                   className={`rounded-lg px-3.5 py-2.5 max-w-[85%] text-xs leading-relaxed whitespace-pre-wrap ${
                     isUser
-                      ? "bg-blue-600 text-white shadow-sm"
+                      ? "bg-slate-900 text-slate-50 dark:bg-blue-600 dark:text-white shadow-sm"
                       : "bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 shadow-sm"
                   }`}
                 >
@@ -116,7 +116,7 @@ export const ChatView: React.FC = () => {
 
       {/* Input Box Form */}
       <form onSubmit={handleSend} className="pt-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#080E1E] transition-colors">
-        <div className="flex items-center space-x-2 bg-white dark:bg-[#0B132B] rounded-lg border border-slate-300 dark:border-slate-700 p-1.5 shadow-sm focus-within:ring-1 focus-within:ring-blue-500">
+        <div className="flex items-center space-x-2 bg-white dark:bg-[#0B132B] rounded-lg border border-slate-300 dark:border-slate-700 p-1.5 shadow-sm focus-within:ring-1 focus-within:ring-slate-950 dark:focus-within:ring-blue-500">
           <Input
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}

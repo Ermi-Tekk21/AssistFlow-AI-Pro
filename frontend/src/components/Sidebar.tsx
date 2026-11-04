@@ -87,7 +87,7 @@ export const Sidebar: React.FC = () => {
           >
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
-          <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-xs tracking-tight shadow-sm">
+          <div className="w-7 h-7 rounded-lg bg-slate-900 dark:bg-blue-600 flex items-center justify-center text-white font-bold text-xs tracking-tight shadow-sm">
             AF
           </div>
           <span className="text-sm font-semibold text-slate-900 dark:text-white tracking-tight">
@@ -152,7 +152,7 @@ export const Sidebar: React.FC = () => {
         <div>
           <div className="h-16 px-5 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+              <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
                 AF
               </div>
               <div>
@@ -216,8 +216,8 @@ export const Sidebar: React.FC = () => {
                   onClick={() => handleSelectTab(tab.id)}
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition-all group ${
                     isActive
-                      ? "bg-blue-600 text-white shadow-sm"
-                      : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/60"
+                      ? "bg-slate-900 text-white shadow-sm dark:bg-blue-600"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800/60"
                   }`}
                 >
                   <div className="flex items-center space-x-3">
@@ -280,7 +280,7 @@ export const Sidebar: React.FC = () => {
               className="flex items-center space-x-2.5 text-left min-w-0 flex-1 hover:opacity-80 transition-opacity"
               title="Edit Profile Settings"
             >
-              <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+              <div className="w-8 h-8 rounded-full bg-slate-900 dark:bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
                 {displayName.charAt(0)}
               </div>
               <div className="min-w-0 flex-1">

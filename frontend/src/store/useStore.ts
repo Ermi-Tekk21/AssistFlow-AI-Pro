@@ -103,7 +103,7 @@ interface AppState {
 const INITIAL_TOKEN = localStorage.getItem("assistflow_token");
 const INITIAL_USER_ID = localStorage.getItem("assistflow_user_id") || "";
 const INITIAL_THEME: "light" | "dark" =
-  (localStorage.getItem("assistflow_theme") as "light" | "dark") || "dark";
+  (localStorage.getItem("assistflow_theme") as "light" | "dark") || "light";
 
 // Synchronize dark class on document element immediately
 if (typeof document !== "undefined") {

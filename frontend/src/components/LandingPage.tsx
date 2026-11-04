@@ -21,12 +21,12 @@ export const LandingPage: React.FC = () => {
   const { theme, toggleTheme } = useStore();
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#080E1E] text-slate-900 dark:text-slate-100 flex flex-col justify-between selection:bg-blue-600 selection:text-white transition-colors">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#080E1E] text-slate-900 dark:text-slate-100 flex flex-col justify-between selection:bg-slate-200 dark:selection:bg-blue-600 selection:text-slate-900 dark:selection:text-white transition-colors">
       {/* Top Navigation */}
       <header className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0B132B] sticky top-0 z-30 transition-colors">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-sm tracking-tight shadow-sm">
+            <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-blue-600 text-white flex items-center justify-center font-bold text-sm tracking-tight shadow-sm">
               AF
             </div>
             <div>
@@ -127,7 +127,7 @@ export const LandingPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Feature 1: Chat & Slot Filling */}
             <div className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-lg p-5 shadow-sm space-y-2.5">
-              <div className="w-8 h-8 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+              <div className="w-8 h-8 rounded bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 flex items-center justify-center">
                 <Bot className="w-4 h-4" />
               </div>
               <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
@@ -142,7 +142,7 @@ export const LandingPage: React.FC = () => {
 
             {/* Feature 2: Calendar & Google Meet */}
             <div className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-lg p-5 shadow-sm space-y-2.5">
-              <div className="w-8 h-8 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <div className="w-8 h-8 rounded bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 flex items-center justify-center">
                 <Video className="w-4 h-4" />
               </div>
               <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
@@ -156,7 +156,7 @@ export const LandingPage: React.FC = () => {
 
             {/* Feature 3: Telegram Reminders & Briefings */}
             <div className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-lg p-5 shadow-sm space-y-2.5">
-              <div className="w-8 h-8 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <div className="w-8 h-8 rounded bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 flex items-center justify-center">
                 <Send className="w-4 h-4" />
               </div>
               <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
@@ -170,7 +170,7 @@ export const LandingPage: React.FC = () => {
 
             {/* Feature 4: Safe Confirmation Guardrails */}
             <div className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-lg p-5 shadow-sm space-y-2.5">
-              <div className="w-8 h-8 rounded bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+              <div className="w-8 h-8 rounded bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 flex items-center justify-center">
                 <ShieldCheck className="w-4 h-4" />
               </div>
               <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
