@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useStore } from "./store/useStore";
-import { Header } from "./components/Header";
+import { Sidebar } from "./components/Sidebar";
 import { LandingPage } from "./components/LandingPage";
 import { ChatView } from "./components/ChatView";
 import { TasksView } from "./components/TasksView";
@@ -57,17 +57,17 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
-      <Header />
+    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans">
+      <Sidebar />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6">
+      <main className="flex-1 min-w-0 max-w-6xl w-full mx-auto p-4 sm:p-6 lg:p-8">
         <ErrorBoundary>
+          {activeTab === "briefing" && <BriefingView />}
           {activeTab === "chat" && <ChatView />}
           {activeTab === "tasks" && <TasksView />}
           {activeTab === "reminders" && <RemindersView />}
           {activeTab === "calendar" && <CalendarView />}
-          {activeTab === "briefing" && <BriefingView />}
           {activeTab === "profile" && <ProfileView />}
         </ErrorBoundary>
       </main>

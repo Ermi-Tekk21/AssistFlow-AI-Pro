@@ -160,7 +160,7 @@ export const useStore = create<AppState>((set, get) => ({
       reminders: [],
       calendarEvents: [],
       pendingActions: [],
-      activeTab: "chat",
+      activeTab: "briefing",
     });
     get().showToast("You have been signed out.", "info");
   },
@@ -197,7 +197,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   // Navigation
-  activeTab: "chat",
+  activeTab: "briefing",
   setActiveTab: (tab: NavTab) => set({ activeTab: tab }),
 
   // Toast

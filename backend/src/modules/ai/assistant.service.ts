@@ -435,8 +435,19 @@ export class AssistantService {
       }
 
       case "reminder_create": {
-        session.activeDraft = null;
         const { title, scheduledAt, description } = intentResult.params;
+
+        if (!scheduledAt) {
+          session.activeDraft = {
+            intent: "reminder_create",
+            params: intentResult.params,
+            missingFields: ["scheduledAt"],
+          };
+          responseText = `When would you like to be reminded about "${title}"? Please specify the exact date and time (e.g. "tomorrow at 3 PM" or "in 20 minutes").`;
+          break;
+        }
+
+        session.activeDraft = null;
         const proposal = `Schedule reminder "${title}" for ${this.formatUserTime(scheduledAt, user.timezone)}`;
 
         proposedPendingAction = await confirmationsService.proposeAction(userId, {
@@ -611,25 +622,51 @@ export class AssistantService {
       case "calendar_create": {
         const { summary, startAt, endAt, description, location, attendees } = intentResult.params;
 
-        // Require at least one attendee email for meeting creation
-        if (!attendees || attendees.length === 0) {
+        // Verify all required slots: startAt, endAt (duration), and attendees
+        const missingFields: string[] = [];
+        if (!startAt) missingFields.push("startAt");
+        if (!endAt) missingFields.push("duration");
+        if (!attendees || attendees.length === 0) missingFields.push("attendees");
+
+        if (missingFields.length > 0) {
           session.activeDraft = {
             intent: "calendar_create",
             params: intentResult.params,
-            missingFields: ["attendees"],
+            missingFields,
           };
-          responseText = `Who will be attending "${summary}"? Please provide at least one attendee email address (e.g. colleague@example.com) to complete the meeting invite.`;
+
+          if (missingFields.includes("startAt") && missingFields.includes("duration") && missingFields.includes("attendees")) {
+            responseText = `Please provide the start time, meeting duration (e.g. 30 minutes, 1 hour), and at least one attendee email address for "${summary}".`;
+          } else if (missingFields.includes("duration") && missingFields.includes("attendees")) {
+            responseText = `Please provide the meeting duration (e.g. 30 minutes, 1 hour) and at least one attendee email address for "${summary}".`;
+          } else if (missingFields.includes("startAt")) {
+            responseText = `When should the meeting "${summary}" start?`;
+          } else if (missingFields.includes("duration")) {
+            responseText = `What is the duration of this meeting (e.g. 30 minutes, 1 hour)?`;
+          } else {
+            responseText = `Who will be attending "${summary}"? Please provide at least one attendee email address (e.g. colleague@example.com).`;
+          }
           break;
         }
 
         session.activeDraft = null;
-        const attendeesStr = attendees.join(", ");
-        const proposal = `Create meeting "${summary}" from ${this.formatUserTime(startAt, user.timezone)} to ${this.formatUserTime(endAt, user.timezone)} with attendees: ${attendeesStr}`;
+        const confirmedAttendees = attendees!;
+        const confirmedStartAt = startAt!;
+        const confirmedEndAt = endAt!;
+        const attendeesStr = confirmedAttendees.join(", ");
+        const proposal = `Create meeting "${summary}" from ${this.formatUserTime(confirmedStartAt, user.timezone)} to ${this.formatUserTime(confirmedEndAt, user.timezone)} with attendees: ${attendeesStr}`;
 
         proposedPendingAction = await confirmationsService.proposeAction(userId, {
           actionType: PendingActionType.CALENDAR_EVENT_CREATE,
           proposal,
-          payload: { summary, startAt, endAt, description, location, attendees },
+          payload: {
+            summary,
+            startAt: confirmedStartAt,
+            endAt: confirmedEndAt,
+            description,
+            location,
+            attendees: confirmedAttendees,
+          },
           expiresInMinutes: 10,
         });
 
