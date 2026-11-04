@@ -14,6 +14,11 @@ async function startServer(): Promise<void> {
 
     console.log("PostgreSQL connection established.");
 
+    // Run database migrations on startup
+    console.log("Running pending database migrations...");
+    await AppDataSource.runMigrations();
+    console.log("Database migrations applied.");
+
     // Seed or synchronize default administrator account
     await authService.seedDefaultUser();
 
