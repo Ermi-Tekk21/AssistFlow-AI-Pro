@@ -38,6 +38,10 @@ interface AppState {
   activeTab: NavTab;
   setActiveTab: (tab: NavTab) => void;
 
+  // Theme (Dark Blue Night Mode vs Light)
+  theme: "light" | "dark";
+  toggleTheme: () => void;
+
   // Toast Notifications
   toast: ToastState | null;
   showToast: (message: string, type?: "success" | "error" | "info") => void;
@@ -98,8 +102,34 @@ interface AppState {
 
 const INITIAL_TOKEN = localStorage.getItem("assistflow_token");
 const INITIAL_USER_ID = localStorage.getItem("assistflow_user_id") || "";
+const INITIAL_THEME: "light" | "dark" =
+  (localStorage.getItem("assistflow_theme") as "light" | "dark") || "dark";
+
+// Synchronize dark class on document element immediately
+if (typeof document !== "undefined") {
+  if (INITIAL_THEME === "dark") {
+    document.documentElement.classList.add("dark");
+  } else {
+    document.documentElement.classList.remove("dark");
+  }
+}
 
 export const useStore = create<AppState>((set, get) => ({
+  // Theme State
+  theme: INITIAL_THEME,
+  toggleTheme: () => {
+    const currentTheme = get().theme;
+    const nextTheme = currentTheme === "dark" ? "light" : "dark";
+    if (typeof document !== "undefined") {
+      if (nextTheme === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    }
+    localStorage.setItem("assistflow_theme", nextTheme);
+    set({ theme: nextTheme });
+  },
   // Authentication & Profile State
   token: INITIAL_TOKEN,
   user: null,

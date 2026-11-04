@@ -200,7 +200,7 @@ export class AssistantService {
 
     // Fast-path resolution for direct affirmative/negative replies when a confirmation is pending
     const trimmed = message.trim().toLowerCase();
-    const isAffirmative = /^(yes|y|yeah|yup|sure|ok|okay|confirm|proceed|accept|do it)$/i.test(trimmed);
+    const isAffirmative = /^(yes|yse|y|ye|ys|yeah|yup|yess|sure|ok|okay|confirm|proceed|accept|do it)$/i.test(trimmed);
     const isNegative = /^(no|n|nope|cancel|reject|deny|abort|never mind|dont|don't)$/i.test(trimmed);
 
     let intentResult: AssistantIntent;

@@ -172,7 +172,7 @@ export class ConfirmationsService {
   ): Promise<{ action: PendingAction; result?: any; decision: "confirmed" | "rejected" }> {
     const rawReply = input.reply.toLowerCase().trim();
 
-    const isPositive = ["y", "yes", "confirm", "proceed", "true", "ok"].includes(rawReply);
+    const isPositive = ["y", "yes", "yse", "ye", "ys", "yess", "confirm", "proceed", "true", "ok"].includes(rawReply);
     const isNegative = ["n", "no", "reject", "cancel", "false"].includes(rawReply);
 
     if (!isPositive && !isNegative) {

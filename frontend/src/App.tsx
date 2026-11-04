@@ -32,22 +32,22 @@ export const App: React.FC = () => {
   // If unauthenticated, show the clean Landing Page
   if (!token) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#080E1E] text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors">
         <ErrorBoundary>
           <LandingPage />
         </ErrorBoundary>
 
         {/* Toast Notification */}
         {toast && (
-          <div className="fixed bottom-4 right-4 z-50 flex items-center space-x-2 px-4 py-2.5 rounded-lg shadow-lg border text-xs font-medium animate-in fade-in slide-in-from-bottom-2 bg-white text-slate-900 border-slate-200">
+          <div className="fixed bottom-4 right-4 z-50 flex items-center space-x-2 px-4 py-2.5 rounded-lg shadow-lg border text-xs font-medium animate-in fade-in slide-in-from-bottom-2 bg-white dark:bg-[#0F172A] text-slate-900 dark:text-slate-100 border-slate-200 dark:border-slate-800">
             {toast.type === "success" && (
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
             )}
             {toast.type === "error" && (
-              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+              <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
             )}
             {toast.type === "info" && (
-              <Info className="w-4 h-4 text-blue-600 shrink-0" />
+              <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
             )}
             <span>{toast.message}</span>
           </div>
@@ -57,7 +57,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#080E1E] text-slate-900 dark:text-slate-100 flex flex-col md:flex-row font-sans transition-colors">
       <Sidebar />
 
       {/* Main Content Area */}
@@ -74,15 +74,15 @@ export const App: React.FC = () => {
 
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-4 right-4 z-50 flex items-center space-x-2 px-4 py-2.5 rounded-lg shadow-lg border text-xs font-medium animate-in fade-in slide-in-from-bottom-2 bg-white text-slate-900 border-slate-200">
+        <div className="fixed bottom-4 right-4 z-50 flex items-center space-x-2 px-4 py-2.5 rounded-lg shadow-lg border text-xs font-medium animate-in fade-in slide-in-from-bottom-2 bg-white dark:bg-[#0F172A] text-slate-900 dark:text-slate-100 border-slate-200 dark:border-slate-800">
           {toast.type === "success" && (
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
           )}
           {toast.type === "error" && (
-            <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+            <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
           )}
           {toast.type === "info" && (
-            <Info className="w-4 h-4 text-blue-600 shrink-0" />
+            <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
           )}
           <span>{toast.message}</span>
         </div>

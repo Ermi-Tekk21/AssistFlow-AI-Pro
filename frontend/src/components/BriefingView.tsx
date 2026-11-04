@@ -16,8 +16,8 @@ export const BriefingView: React.FC = () => {
     <div className="max-w-4xl mx-auto space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-slate-900">Daily Morning Briefing</h2>
-          <p className="text-xs text-slate-500">
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Daily Morning Briefing</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             A concise daily summary aggregated in your timezone and delivered to your Telegram.
           </p>
         </div>
@@ -46,61 +46,61 @@ export const BriefingView: React.FC = () => {
       </div>
 
       {briefingLoading && !briefing ? (
-        <div className="py-12 text-center text-xs text-slate-500 flex items-center justify-center space-x-2">
-          <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+        <div className="py-12 text-center text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center space-x-2">
+          <Loader2 className="w-4 h-4 animate-spin text-slate-400 dark:text-slate-500" />
           <span>Compiling today's briefing...</span>
         </div>
       ) : !briefing ? (
-        <div className="bg-white border border-slate-200 rounded-lg p-12 text-center">
-          <p className="text-sm font-medium text-slate-800">Briefing not available</p>
+        <div className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-lg p-12 text-center">
+          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Briefing not available</p>
         </div>
       ) : (
         <div className="space-y-4">
           {/* Quick Metrics Header */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Card className="bg-white shadow-sm border-slate-200">
+            <Card className="bg-white dark:bg-[#0F172A] shadow-sm border-slate-200 dark:border-slate-800">
               <CardContent className="p-4 flex items-center justify-between">
                 <div>
-                  <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
+                  <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Today's Meetings
                   </p>
-                  <p className="text-xl font-bold text-slate-900 mt-0.5">
+                  <p className="text-xl font-bold text-slate-900 dark:text-white mt-0.5">
                     {briefing.counts.events}
                   </p>
                 </div>
-                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 flex items-center justify-center">
                   <Calendar className="w-4 h-4" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-white shadow-sm border-slate-200">
+            <Card className="bg-white dark:bg-[#0F172A] shadow-sm border-slate-200 dark:border-slate-800">
               <CardContent className="p-4 flex items-center justify-between">
                 <div>
-                  <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
+                  <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Today's Reminders
                   </p>
-                  <p className="text-xl font-bold text-slate-900 mt-0.5">
+                  <p className="text-xl font-bold text-slate-900 dark:text-white mt-0.5">
                     {briefing.counts.reminders}
                   </p>
                 </div>
-                <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 flex items-center justify-center">
                   <Bell className="w-4 h-4" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-white shadow-sm border-slate-200">
+            <Card className="bg-white dark:bg-[#0F172A] shadow-sm border-slate-200 dark:border-slate-800">
               <CardContent className="p-4 flex items-center justify-between">
                 <div>
-                  <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
+                  <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Pending Tasks
                   </p>
-                  <p className="text-xl font-bold text-slate-900 mt-0.5">
+                  <p className="text-xl font-bold text-slate-900 dark:text-white mt-0.5">
                     {briefing.counts.tasks}
                   </p>
                 </div>
-                <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center">
                   <CheckSquare className="w-4 h-4" />
                 </div>
               </CardContent>
@@ -108,7 +108,7 @@ export const BriefingView: React.FC = () => {
           </div>
 
           {/* Telegram Preview Card */}
-          <Card className="border-slate-200 shadow-sm bg-white">
+          <Card className="border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-[#0F172A]">
             <CardHeader className="py-3.5 flex flex-row items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Sun className="w-4 h-4 text-amber-500" />
@@ -121,12 +121,12 @@ export const BriefingView: React.FC = () => {
 
             <CardContent className="pt-4">
               <div
-                className="bg-slate-50 border border-slate-200 rounded-lg p-5 font-sans text-xs text-slate-800 leading-relaxed space-y-2 whitespace-pre-wrap select-text"
+                className="bg-slate-50 dark:bg-[#080E1E] border border-slate-200 dark:border-slate-800 rounded-lg p-5 font-sans text-xs text-slate-800 dark:text-slate-200 leading-relaxed space-y-2 whitespace-pre-wrap select-text"
                 dangerouslySetInnerHTML={{ __html: briefing.html }}
               />
             </CardContent>
 
-            <CardFooter className="py-3 justify-between text-xs text-slate-500">
+            <CardFooter className="py-3 justify-between text-xs text-slate-500 dark:text-slate-400">
               <span>Automatic schedule triggers via n8n at configured briefing time</span>
               <Button size="sm" onClick={() => sendBriefingNow()}>
                 <Send className="w-3.5 h-3.5 mr-1" />

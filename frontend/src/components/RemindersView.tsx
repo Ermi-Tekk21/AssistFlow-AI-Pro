@@ -35,25 +35,25 @@ export const RemindersView: React.FC = () => {
     <div className="max-w-4xl mx-auto space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-slate-900">Reminders & Telegram Alerts</h2>
-          <p className="text-xs text-slate-500">
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Reminders & Telegram Alerts</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Due reminders are claimed concurrency-safe and dispatched to Telegram by n8n.
           </p>
         </div>
       </div>
 
       {remindersLoading ? (
-        <div className="py-12 text-center text-xs text-slate-500 flex items-center justify-center space-x-2">
-          <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+        <div className="py-12 text-center text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center space-x-2">
+          <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
           <span>Loading reminders...</span>
         </div>
       ) : (reminders || []).length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-lg p-12 text-center">
-          <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2 text-slate-600">
+        <div className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-lg p-12 text-center">
+          <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-2 text-slate-600 dark:text-slate-300">
             <Bell className="w-5 h-5" />
           </div>
-          <p className="text-sm font-medium text-slate-800">No reminders found</p>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">No reminders found</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Ask the assistant in chat to schedule a reminder for you!
           </p>
         </div>
@@ -65,36 +65,36 @@ export const RemindersView: React.FC = () => {
             return (
               <div
                 key={reminder.id}
-                className="bg-white border border-slate-200 rounded-lg p-3.5 flex items-center justify-between shadow-sm hover:border-slate-300 transition-colors"
+                className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-lg p-3.5 flex items-center justify-between shadow-sm hover:border-slate-300 dark:hover:border-slate-700 transition-colors"
               >
                 <div className="space-y-1 min-w-0 pr-4">
                   <div className="flex items-center space-x-2">
-                    <p className="text-xs font-semibold text-slate-900 truncate">
+                    <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">
                       {reminder.title}
                     </p>
                     {getStatusBadge(reminder.status)}
                   </div>
 
                   {reminder.description && (
-                    <p className="text-[11px] text-slate-600 truncate">{reminder.description}</p>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate">{reminder.description}</p>
                   )}
 
-                  <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500 pt-0.5">
+                  <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400 pt-0.5">
                     <div className="flex items-center font-mono">
-                      <Clock className="w-3 h-3 mr-1 text-slate-400" />
+                      <Clock className="w-3 h-3 mr-1 text-slate-400 dark:text-slate-500" />
                       <span>{formatDateTime(reminder.scheduledAt)}</span>
-                      <span className="text-[10px] text-slate-400 ml-1">({reminder.timezone})</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-1">({reminder.timezone})</span>
                     </div>
 
                     {reminder.task && (
-                      <div className="flex items-center text-slate-600 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
+                      <div className="flex items-center text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-[#080E1E] px-1.5 py-0.5 rounded border border-slate-100 dark:border-slate-800">
                         <CheckSquare className="w-3 h-3 mr-1 text-slate-400" />
                         <span>Task: {reminder.task.title}</span>
                       </div>
                     )}
 
                     {reminder.calendarEvent && (
-                      <div className="flex items-center text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
+                      <div className="flex items-center text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-900/60">
                         <Calendar className="w-3 h-3 mr-1 text-blue-400" />
                         <span>10-Min Pre-Meeting Alert</span>
                       </div>
@@ -105,7 +105,7 @@ export const RemindersView: React.FC = () => {
                 {isScheduled && (
                   <button
                     onClick={() => cancelReminder(reminder.id)}
-                    className="text-slate-400 hover:text-red-600 transition-colors p-1 shrink-0"
+                    className="text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors p-1 shrink-0"
                     title="Cancel reminder"
                   >
                     <XCircle className="w-4 h-4" />
