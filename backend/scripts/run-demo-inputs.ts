@@ -75,8 +75,11 @@ async function runDemos() {
 
   // Demo 4 – Reminder Management
   console.log("\n>>> DEMO 4: Smart Reminders (Recurring Schedule) <<<");
-  await sendMessage("Remind me every Monday at 8 AM to review my weekly goals.");
-  await sendMessage("yes");
+  const d4Res = await sendMessage("Remind me every Monday at 8 AM to review my weekly goals.");
+  const d4Reply = await sendMessage("yes");
+  if (d4Reply.pendingAction) {
+    await sendMessage("yes");
+  }
 
   // Demo 5 – Meeting Updates
   console.log("\n>>> DEMO 5: Schedule Coordination (Meeting Update) <<<");
