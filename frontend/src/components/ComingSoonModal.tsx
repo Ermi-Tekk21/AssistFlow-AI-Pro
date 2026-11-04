@@ -110,7 +110,7 @@ export const ComingSoonModal: React.FC<ComingSoonModalProps> = ({
           </div>
 
           <div className="p-3 bg-amber-50/70 border border-amber-200 rounded text-[11px] text-amber-900">
-            <strong>Current Access:</strong> The platform is fully operational for the pre-configured default administrator account (<span className="font-mono">ermias@gmail.com</span>). A guided self-serve setup wizard with automated OAuth consent will be released in an upcoming update!
+            <strong>Current Access:</strong> The platform is fully operational for the pre-configured default administrator account. A guided self-serve setup wizard with automated OAuth consent will be released in an upcoming update!
           </div>
         </div>
 
