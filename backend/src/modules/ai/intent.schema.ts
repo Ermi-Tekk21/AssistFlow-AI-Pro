@@ -133,7 +133,11 @@ export const OverviewQueryIntentSchema = z.object({
     includeTasks: z.boolean().default(true),
     includeCalendar: z.boolean().default(true),
     includeReminders: z.boolean().default(true),
-  }).default({}),
+  }).default({
+    includeTasks: true,
+    includeCalendar: true,
+    includeReminders: true,
+  }),
 });
 
 export const DailyBriefingRequestIntentSchema = z.object({
@@ -147,6 +151,7 @@ export const ConfirmationReplyIntentSchema = z.object({
   intent: z.literal("confirmation_reply"),
   params: z.object({
     confirmed: z.boolean(),
+    actionId: z.string().uuid().optional(),
     rawReply: z.string().default(""),
   }),
 });

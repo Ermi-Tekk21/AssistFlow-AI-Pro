@@ -210,6 +210,7 @@ export class AssistantService {
         params: {
           confirmed: isAffirmative,
           actionId: activePendingAction?.id,
+          rawReply: trimmed,
         },
       };
     } else {
