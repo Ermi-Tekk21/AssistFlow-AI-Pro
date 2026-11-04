@@ -15,10 +15,11 @@ import {
   Loader2,
   CheckCircle2,
   ShieldCheck,
+  Send,
 } from "lucide-react";
 
 export const ProfileView: React.FC = () => {
-  const { user, fetchMe, updateProfile, logout, authLoading } = useStore();
+  const { user, fetchMe, updateProfile, sendBriefingNow, logout, authLoading } = useStore();
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -26,6 +27,21 @@ export const ProfileView: React.FC = () => {
   const [dailyBriefingEnabled, setDailyBriefingEnabled] = useState(false);
   const [timezone, setTimezone] = useState("Africa/Addis_Ababa");
   const [isSaved, setIsSaved] = useState(false);
+  const [testSending, setTestSending] = useState(false);
+  const [testSentSuccess, setTestSentSuccess] = useState(false);
+
+  const handleTestSendBriefing = async () => {
+    try {
+      setTestSending(true);
+      await sendBriefingNow();
+      setTestSentSuccess(true);
+      setTimeout(() => setTestSentSuccess(false), 4000);
+    } catch (err) {
+      console.error("Test send briefing failed:", err);
+    } finally {
+      setTestSending(false);
+    }
+  };
 
   useEffect(() => {
     if (!user) {
@@ -201,6 +217,37 @@ export const ProfileView: React.FC = () => {
                   <p className="text-[11px] text-slate-500">
                     Dispatched daily at this time in your local timezone ({timezone}).
                   </p>
+
+                  <div className="pt-2 mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-t border-slate-200/70">
+                    <span className="text-[11px] text-slate-500">
+                      Want to verify Telegram delivery right now?
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={testSending}
+                      onClick={handleTestSendBriefing}
+                      className="text-xs border-slate-300 text-slate-700 hover:bg-slate-100 shrink-0"
+                    >
+                      {testSending ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin text-slate-500" />
+                          <span>Dispatching...</span>
+                        </>
+                      ) : testSentSuccess ? (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
+                          <span className="text-emerald-700 font-medium">Sent to Telegram!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
+                          <span>Send Briefing to Telegram Now</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
