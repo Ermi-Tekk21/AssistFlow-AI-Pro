@@ -79,6 +79,33 @@ export class AssistantService {
     return await this.sessionRepo.save(newSession);
   }
 
+  private formatUserTime(dateInput?: string | Date | null, timezone = "Africa/Addis_Ababa"): string {
+    if (!dateInput) return "";
+    try {
+      const d = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+      if (isNaN(d.getTime())) return String(dateInput);
+
+      const timeStr = d.toLocaleTimeString("en-US", {
+        timeZone: timezone,
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      });
+
+      const dateStr = d.toLocaleDateString("en-US", {
+        timeZone: timezone,
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+
+      return `${timeStr} EAT (${dateStr})`;
+    } catch {
+      return String(dateInput);
+    }
+  }
+
   private async findCalendarEventByQuery(
     userId: string,
     query?: string,
@@ -261,7 +288,7 @@ export class AssistantService {
       case "task_create": {
         session.activeDraft = null;
         const { title, description, priority, dueAt } = intentResult.params;
-        const dueFormatted = dueAt ? ` due ${dueAt}` : "";
+        const dueFormatted = dueAt ? ` due ${this.formatUserTime(dueAt, user.timezone)}` : "";
         const proposal = `Create task "${title}" with priority ${priority}${dueFormatted}`;
 
         proposedPendingAction = await confirmationsService.proposeAction(userId, {
@@ -397,7 +424,7 @@ export class AssistantService {
       case "reminder_create": {
         session.activeDraft = null;
         const { title, scheduledAt, description } = intentResult.params;
-        const proposal = `Schedule reminder "${title}" for ${scheduledAt}`;
+        const proposal = `Schedule reminder "${title}" for ${this.formatUserTime(scheduledAt, user.timezone)}`;
 
         proposedPendingAction = await confirmationsService.proposeAction(userId, {
           actionType: PendingActionType.REMINDER_CREATE,
@@ -584,7 +611,7 @@ export class AssistantService {
 
         session.activeDraft = null;
         const attendeesStr = attendees.join(", ");
-        const proposal = `Create meeting "${summary}" from ${startAt} to ${endAt} with attendees: ${attendeesStr}`;
+        const proposal = `Create meeting "${summary}" from ${this.formatUserTime(startAt, user.timezone)} to ${this.formatUserTime(endAt, user.timezone)} with attendees: ${attendeesStr}`;
 
         proposedPendingAction = await confirmationsService.proposeAction(userId, {
           actionType: PendingActionType.CALENDAR_EVENT_CREATE,
@@ -629,7 +656,7 @@ export class AssistantService {
           updates.endAt = new Date(new Date(updates.startAt).getTime() + duration).toISOString();
         }
 
-        const timeChangeStr = updates.startAt ? ` to ${updates.startAt}` : "";
+        const timeChangeStr = updates.startAt ? ` to ${this.formatUserTime(updates.startAt, user.timezone)}` : "";
         const proposal = `Reschedule meeting "${event.title}"${timeChangeStr}`;
 
         proposedPendingAction = await confirmationsService.proposeAction(userId, {
@@ -672,7 +699,7 @@ export class AssistantService {
           overview += "  No meetings scheduled for this week.\n";
         } else {
           upcomingEvents.forEach((e) => {
-            overview += `  • ${e.title} (${new Date(e.startAt).toLocaleString()})${
+            overview += `  • ${e.title} (${this.formatUserTime(e.startAt, user.timezone)})${
               e.meetUrl ? ` [Meet: ${e.meetUrl}]` : ""
             }\n`;
           });
@@ -684,7 +711,7 @@ export class AssistantService {
         } else {
           pendingTasks.forEach((t) => {
             overview += `  • [${t.priority.toUpperCase()}] ${t.title}${
-              t.dueAt ? ` (Due: ${new Date(t.dueAt).toLocaleDateString()})` : ""
+              t.dueAt ? ` (Due: ${this.formatUserTime(t.dueAt, user.timezone)})` : ""
             }\n`;
           });
         }
@@ -708,7 +735,7 @@ export class AssistantService {
           break;
         }
 
-        const proposal = `Cancel meeting "${event.title}" scheduled for ${event.startAt.toISOString()}`;
+        const proposal = `Cancel meeting "${event.title}" scheduled for ${this.formatUserTime(event.startAt, user.timezone)}`;
         proposedPendingAction = await confirmationsService.proposeAction(userId, {
           actionType: PendingActionType.CALENDAR_EVENT_CANCEL,
           proposal,
@@ -757,7 +784,7 @@ export class AssistantService {
         } else {
           pendingTasks.forEach((t) => {
             briefingText += `  • [${t.priority.toUpperCase()}] ${t.title}${
-              t.dueAt ? ` (Due: ${new Date(t.dueAt).toLocaleTimeString()})` : ""
+              t.dueAt ? ` (Due: ${this.formatUserTime(t.dueAt, user.timezone)})` : ""
             }\n`;
           });
         }
@@ -767,7 +794,7 @@ export class AssistantService {
           briefingText += "  No scheduled reminders for today.\n";
         } else {
           todayReminders.forEach((r) => {
-            briefingText += `  • ${r.title} at ${new Date(r.scheduledAt).toLocaleTimeString()}\n`;
+            briefingText += `  • ${r.title} at ${this.formatUserTime(r.scheduledAt, user.timezone)}\n`;
           });
         }
 
@@ -776,7 +803,7 @@ export class AssistantService {
           briefingText += "  No scheduled meetings for today.\n";
         } else {
           todayEvents.forEach((e) => {
-            briefingText += `  • ${e.title} at ${new Date(e.startAt).toLocaleTimeString()}${
+            briefingText += `  • ${e.title} at ${this.formatUserTime(e.startAt, user.timezone)}${
               e.meetUrl ? ` (Meet: ${e.meetUrl})` : ""
             }\n`;
           });

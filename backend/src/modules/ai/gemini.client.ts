@@ -30,6 +30,22 @@ export class GeminiClient {
   }
 
   private buildSystemInstruction(context: GeminiContext): string {
+    let localTimeStr = context.currentUtcTimestamp;
+    try {
+      localTimeStr = new Intl.DateTimeFormat("en-US", {
+        timeZone: context.userTimezone || "Africa/Addis_Ababa",
+        weekday: "short",
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+        timeZoneName: "short",
+      }).format(new Date(context.currentUtcTimestamp));
+    } catch {}
+
     return `You are AssistFlow AI, an executive assistant natural language intent interpreter.
 Your ONLY role is to translate user input into a single strictly structured JSON object adhering to the specified schema.
 
@@ -42,8 +58,10 @@ NON-NEGOTIABLE SECURITY & PROMPT-INJECTION RULES:
 TIMEZONE & RELATIVE DATE RULES:
 1. The backend trusted current UTC instant is: ${context.currentUtcTimestamp}
 2. The user's IANA timezone is: "${context.userTimezone}"
-3. ALWAYS compute relative dates ("tomorrow", "next Monday at 2pm", "in 3 hours", "tonight at 8") into exact ISO 8601 UTC strings based on this timezone and current UTC instant.
-4. If a date is ambiguous (e.g. "on the 5th" without month, or "at 3" without AM/PM or date), return intent "clarification_needed" with question asking for the exact date/time.
+3. The user's CURRENT LOCAL TIME is: "${localTimeStr}"
+4. All user inputs referencing times and dates (e.g. "at 1:17 am", "tomorrow at 10 AM", "at 4 PM", "by Friday") are expressed in the user's local timezone ("${context.userTimezone}").
+5. ALWAYS compute times and relative dates ("tomorrow", "next Monday at 2pm", "in 3 hours", "tonight at 8") into exact ISO 8601 UTC strings by converting from the user's local time (${localTimeStr}) to UTC.
+6. If a date is ambiguous (e.g. "on the 5th" without month, or "at 3" without AM/PM or date), return intent "clarification_needed" with question asking for the exact date/time.
 
 SLOT-FILLING & CLARIFICATION RULES:
 1. For "reminder_create", title and scheduledAt are MANDATORY. If the user says "remind me to call John" without a time, DO NOT guess a time. Respond with:

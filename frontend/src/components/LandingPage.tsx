@@ -12,9 +12,6 @@ import {
   UserCheck,
 } from "lucide-react";
 
-const DEFAULT_EMAIL =
-  import.meta.env.VITE_DEFAULT_USER_EMAIL || "ermiasteklemarkos@gmail.com";
-
 export const LandingPage: React.FC = () => {
   const [isSignInOpen, setIsSignInOpen] = useState(false);
   const [isComingSoonOpen, setIsComingSoonOpen] = useState(false);
@@ -85,7 +82,7 @@ export const LandingPage: React.FC = () => {
               className="w-full sm:w-auto text-sm px-6 font-medium"
             >
               <UserCheck className="w-4 h-4 mr-2" />
-              Sign In (Default User)
+              Sign In
             </Button>
             <Button
               variant="outline"
@@ -93,15 +90,15 @@ export const LandingPage: React.FC = () => {
               onClick={() => setIsComingSoonOpen(true)}
               className="w-full sm:w-auto text-sm px-6 bg-white"
             >
-              Create Account (Coming Soon)
+              Create Account
               <ArrowRight className="w-4 h-4 ml-1.5 text-slate-400" />
             </Button>
           </div>
 
-          <p className="mt-3 text-xs text-slate-400">
+          {/* <p className="mt-3 text-xs text-slate-400">
             Default administrator profile pre-configured for{" "}
             <span className="font-mono text-slate-600">{DEFAULT_EMAIL}</span> (Ermias Teklemarkos)
-          </p>
+          </p> */}
         </section>
 
         {/* Feature Highlights Grid */}

@@ -3,7 +3,6 @@ import { useStore } from "../store/useStore";
 import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import { Card, CardHeader, CardTitle, CardContent } from "./ui/Card";
-import { Badge } from "./ui/Badge";
 import {
   User,
   Mail,
@@ -87,9 +86,9 @@ export const ProfileView: React.FC = () => {
             </div>
             <CardTitle className="text-xs font-semibold">User Details & Briefing Preferences</CardTitle>
           </div>
-          <Badge variant="secondary" className="font-mono text-[11px]">
+          {/* <Badge variant="secondary" className="font-mono text-[11px]">
             Single JWT Access
-          </Badge>
+          </Badge> */}
         </CardHeader>
 
         <CardContent className="pt-4">
