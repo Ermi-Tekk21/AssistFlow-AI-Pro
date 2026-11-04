@@ -311,11 +311,15 @@ export class AssistantService {
             where: { id: intentResult.params.taskId, userId },
           });
         } else if (intentResult.params.query) {
+          const cleanQuery = intentResult.params.query.trim();
           task = await this.taskRepo
             .createQueryBuilder("task")
             .where("task.userId = :userId", { userId })
             .andWhere("task.status = :status", { status: TaskStatus.PENDING })
-            .andWhere("task.title ILIKE :q", { q: `%${intentResult.params.query}%` })
+            .andWhere("(task.title ILIKE :q OR :rawQuery ILIKE ('%' || task.title || '%'))", {
+              q: `%${cleanQuery}%`,
+              rawQuery: cleanQuery,
+            })
             .orderBy("task.createdAt", "DESC")
             .getOne();
         }
@@ -331,7 +335,7 @@ export class AssistantService {
         proposedPendingAction = await confirmationsService.proposeAction(userId, {
           actionType: PendingActionType.TASK_COMPLETE,
           proposal,
-          payload: {},
+          payload: { id: task.id },
           targetEntityId: task.id,
           targetEntityType: "task",
           expiresInMinutes: 10,
@@ -349,10 +353,14 @@ export class AssistantService {
             where: { id: intentResult.params.taskId, userId },
           });
         } else if (intentResult.params.query) {
+          const cleanQuery = intentResult.params.query.trim();
           task = await this.taskRepo
             .createQueryBuilder("task")
             .where("task.userId = :userId", { userId })
-            .andWhere("task.title ILIKE :q", { q: `%${intentResult.params.query}%` })
+            .andWhere("(task.title ILIKE :q OR :rawQuery ILIKE ('%' || task.title || '%'))", {
+              q: `%${cleanQuery}%`,
+              rawQuery: cleanQuery,
+            })
             .orderBy("task.createdAt", "DESC")
             .getOne();
         }
@@ -376,7 +384,7 @@ export class AssistantService {
         proposedPendingAction = await confirmationsService.proposeAction(userId, {
           actionType: PendingActionType.TASK_UPDATE,
           proposal,
-          payload: updates,
+          payload: { id: task.id, input: updates, ...updates },
           targetEntityId: task.id,
           targetEntityType: "task",
           expiresInMinutes: 10,
@@ -394,10 +402,14 @@ export class AssistantService {
             where: { id: intentResult.params.taskId, userId },
           });
         } else if (intentResult.params.query) {
+          const cleanQuery = intentResult.params.query.trim();
           task = await this.taskRepo
             .createQueryBuilder("task")
             .where("task.userId = :userId", { userId })
-            .andWhere("task.title ILIKE :q", { q: `%${intentResult.params.query}%` })
+            .andWhere("(task.title ILIKE :q OR :rawQuery ILIKE ('%' || task.title || '%'))", {
+              q: `%${cleanQuery}%`,
+              rawQuery: cleanQuery,
+            })
             .getOne();
         }
 
@@ -412,7 +424,7 @@ export class AssistantService {
         proposedPendingAction = await confirmationsService.proposeAction(userId, {
           actionType: PendingActionType.TASK_DELETE,
           proposal,
-          payload: {},
+          payload: { id: task.id },
           targetEntityId: task.id,
           targetEntityType: "task",
           expiresInMinutes: 10,
@@ -472,7 +484,7 @@ export class AssistantService {
         proposedPendingAction = await confirmationsService.proposeAction(userId, {
           actionType: PendingActionType.REMINDER_SNOOZE,
           proposal,
-          payload: { minutes },
+          payload: { id: reminder.id, snoozeMinutes: minutes, input: { snoozeMinutes: minutes } },
           targetEntityId: reminder.id,
           targetEntityType: "reminder",
           expiresInMinutes: 10,
@@ -509,7 +521,7 @@ export class AssistantService {
         proposedPendingAction = await confirmationsService.proposeAction(userId, {
           actionType: PendingActionType.REMINDER_CANCEL,
           proposal,
-          payload: {},
+          payload: { id: reminder.id },
           targetEntityId: reminder.id,
           targetEntityType: "reminder",
           expiresInMinutes: 10,
