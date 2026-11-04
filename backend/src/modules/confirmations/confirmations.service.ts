@@ -83,55 +83,56 @@ export class ConfirmationsService {
     userId: string,
     actionId: string
   ): Promise<{ action: PendingAction; result: any }> {
-    return await AppDataSource.transaction(async (txManager) => {
+    // 1. Atomically lock and transition from PENDING to CONFIRMED
+    const action = await AppDataSource.transaction(async (txManager) => {
       const repo = txManager.getRepository(PendingAction);
 
-      const action = await repo.findOne({
+      const target = await repo.findOne({
         where: { id: actionId, userId },
         lock: { mode: "pessimistic_write" },
       });
 
-      if (!action) {
+      if (!target) {
         throw new NotFoundError("Pending action not found");
       }
 
-      if (action.status !== PendingActionStatus.PENDING) {
+      if (target.status !== PendingActionStatus.PENDING) {
         throw new BadRequestError(
-          `Pending action has already been ${action.status}`
+          `Pending action has already been ${target.status}`
         );
       }
 
-      if (new Date() >= action.expiresAt) {
-        action.status = PendingActionStatus.EXPIRED;
-        await repo.save(action);
+      if (new Date() >= target.expiresAt) {
+        target.status = PendingActionStatus.EXPIRED;
+        await repo.save(target);
         throw new BadRequestError("Pending action has expired and cannot be confirmed");
       }
 
       // Mark as confirmed
-      action.status = PendingActionStatus.CONFIRMED;
-      action.confirmedAt = new Date();
-      await repo.save(action);
-
-      // Execute stored payload
-      try {
-        const executionResult = await this.executeAction(
-          action.actionType,
-          userId,
-          action.payload
-        );
-        action.status = PendingActionStatus.EXECUTED;
-        action.executedAt = new Date();
-        action.executionResult = executionResult;
-        await repo.save(action);
-
-        return { action, result: executionResult };
-      } catch (error: any) {
-        action.status = PendingActionStatus.FAILED;
-        action.executionResult = { error: error.message ?? "Execution failed" };
-        await repo.save(action);
-        throw error;
-      }
+      target.status = PendingActionStatus.CONFIRMED;
+      target.confirmedAt = new Date();
+      return await repo.save(target);
     });
+
+    // 2. Execute stored payload outside the transaction so locks are not held
+    try {
+      const executionResult = await this.executeAction(
+        action.actionType,
+        userId,
+        action.payload
+      );
+      action.status = PendingActionStatus.EXECUTED;
+      action.executedAt = new Date();
+      action.executionResult = executionResult;
+      await this.actionRepo.save(action);
+
+      return { action, result: executionResult };
+    } catch (error: any) {
+      action.status = PendingActionStatus.FAILED;
+      action.executionResult = { error: error.message ?? "Execution failed" };
+      await this.actionRepo.save(action);
+      throw error;
+    }
   }
 
   async rejectAction(userId: string, actionId: string): Promise<PendingAction> {
