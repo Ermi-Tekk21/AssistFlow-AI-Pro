@@ -95,6 +95,23 @@ curl http://localhost:3000/health
 # {"status":"ok","service":"AssistFlow AI"}
 ```
 
+### 6. Run React Frontend (Phase 9)
+
+In a separate terminal:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Open http://localhost:5173 to interact with AssistFlow AI. Requests to `/api/*` are automatically proxied to the backend on `http://localhost:3000`.
+
+To create a production build:
+```bash
+cd frontend
+npm run build
+npm run preview
+```
+
 ---
 
 ## Task Management API (Phase 1)
@@ -632,6 +649,109 @@ Phase 8 introduces the automated morning executive briefing, aggregating tasks, 
 • [HIGH] <b>Quarterly Board Review</b> ⚠️ <b>(Overdue: 11:00 AM)</b>
 • [MED] <b>Update documentation</b>
 ```
+
+---
+
+## React Frontend Application (Phase 9)
+
+Phase 9 introduces the single-page application (SPA) built with **React 18 + TypeScript + Zustand + Tailwind CSS + shadcn/ui style components**. The UI features a clean, human-crafted slate/zinc aesthetic without distracting animations or gradients.
+
+### Key Frontend Features
+
+1. **AI Chat Assistant Interface (`ChatView.tsx`)**:
+   - Conversational multi-turn session with Gemini natural language understanding.
+   - Quick-start prompt chips for common executive workflows (e.g., *"Schedule team sync tomorrow at 3pm"*, *"Remind me to call John in 2 hours"*).
+   - Typing indicator and resilient error states.
+2. **Strict Confirmation Workflow (`PendingActionCard.tsx`)**:
+   - Action proposals (task creation, meeting scheduling, cancellations) require explicit user approval.
+   - Displays real-time pending action banners with one-click **"Confirm & Execute"** and **"Cancel"** actions.
+3. **Tasks Management (`TasksView.tsx`)**:
+   - Filterable task views (`All`, `Pending`, `Completed`).
+   - Inline task creation with title, description, priority selector (`low`, `medium`, `high`), and due date picker.
+   - Instant toggle completion and task deletion.
+4. **Reminders Agenda (`RemindersView.tsx`)**:
+   - Real-time status badges (`scheduled`, `sent`, `cancelled`).
+   - Shows associated tasks or calendar meetings, human-readable scheduled trigger dates, and one-click cancellation.
+5. **Calendar & Google Meet (`CalendarView.tsx`)**:
+   - Chronological agenda of meetings.
+   - Attendee list display and direct **"Join Google Meet"** video conferencing links.
+   - Meeting cancellation with confirmation.
+6. **Executive Morning Briefing Preview (`BriefingView.tsx`)**:
+   - Metrics summary card showing today's meeting count, pending tasks count, and reminder count.
+   - Live Telegram HTML formatted message preview.
+   - One-click **"Send to Telegram Now"** button for immediate dispatch.
+7. **Multi-User Context Switcher (`Header.tsx`)**:
+   - Quick switcher between demo user accounts or custom UUID entry with live state synchronization.
+
+---
+
+## Release Readiness, E2E Journeys & Security Hardening (Phase 10)
+
+Phase 10 establishes complete production release readiness, comprehensive end-to-end user journey tests across all system subsystems, security hardening, and operational runbooks.
+
+### 1. End-to-End User Journeys (`backend/tests/e2e.journeys.test.ts`)
+
+A unified suite tests all 7 primary user journeys against live PostgreSQL and Express instances:
+- **Journey 1: Core Task Lifecycle**: Full CRUD lifecycle (`create`, `read`, `update`, `complete`, `delete`), input validation, and proper 404 responses.
+- **Journey 2: AI Reminder Proposal to Telegram Delivery**: Natural language prompt creates a pending action, user confirmation executes it, and n8n workflow claims and delivers the reminder to Telegram with notification attempt audit logging.
+- **Journey 3: Reminder Snooze & Reschedule Invariants**: Rescheduling or snoozing a reminder ensures earlier scheduled triggers are ignored and new timestamps are strictly honored.
+- **Journey 4: Multi-Turn Meeting Scheduling & Linked Prep Reminder**: Slot-filling completes meeting details (title, attendees, start time, duration), creates the Google Calendar event with Google Meet link, and automatically provisions a linked 10-minute preparation reminder.
+- **Journey 5: Calendar Meeting Cancellation Cascading**: Cancelling a meeting via `DELETE /api/calendar/events/:id` or `POST /api/calendar/events/:id/cancel` cascades and automatically cancels all linked preparation reminders.
+- **Journey 6: Daily Morning Briefing Lifecycle**: Verifies empty-day positive messaging, aggregation of meetings/reminders/tasks, and idempotency guarantees that prevent duplicate briefing delivery for the same local calendar day.
+- **Journey 7: Security Hardening, CORS & Database Invariants**: Verifies CORS preflight handling (204 No Content), multi-tenant isolation, rate limiting on AI endpoints, and the PostgreSQL `chk_reminder_target_exclusive` constraint.
+
+### 2. Security Hardening
+
+- **CORS Protection**: Integrated Express CORS middleware allowing configured HTTP methods (`GET, POST, PUT, PATCH, DELETE, OPTIONS`) and required headers (`x-user-id`, `x-workflow-secret`, `Content-Type`). Preflight `OPTIONS` requests return 204 No Content.
+- **Rate Limiting**: Lightweight, zero-dependency in-memory rate limiter protects `/api/assistant/message` from brute force or quota exhaustion (configurable window and request limit per IP).
+- **Tenant Isolation**: Every database entity query filters by `userId`. Users cannot read, update, or cancel another user's tasks, reminders, meetings, or pending actions.
+- **Credential & Secret Redaction**: Gemini, Telegram, and Google OAuth tokens are automatically masked or stripped in error messages and logs before reaching the client or log files.
+- **Database Constraints**:
+  - `chk_reminder_target_exclusive`: Guarantees a reminder cannot simultaneously link to both a `task_id` and a `calendar_event_id`.
+  - Foreign key constraints enforce referential integrity across users, tasks, reminders, and calendar events.
+
+### 3. Production Verification & Runbook
+
+#### Verifying Services
+```bash
+# Check running Docker containers
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+# Run all 100 backend unit, integration, and E2E tests
+npm test --prefix backend
+
+# Build frontend production bundle
+npm run build --prefix frontend
+```
+
+#### Common Troubleshooting Scenarios
+
+1. **PostgreSQL Connection Refused (`ECONNREFUSED 127.0.0.1:5435`)**:
+   - Ensure the container is up: `docker compose up -d assistflow_postgres`.
+   - Verify health: `docker exec assistflow_postgres pg_isready -U assistflow_ai_pro_user -d assistflow_ai_pro_db`.
+2. **Telegram Delivery Errors (`401 Unauthorized` or `400 Bad Request`)**:
+   - Verify `TELEGRAM_BOT_TOKEN` format (e.g. `123456789:ABCdef...`).
+   - Verify `TELEGRAM_CHAT_ID`: Send `/start` to your bot in Telegram, then check `https://api.telegram.org/bot<TOKEN>/getUpdates` to get your numeric `chat_id`.
+3. **Google OAuth Token Refresh**:
+   - If Google Calendar API returns `401 Unauthorized`, re-authenticate the user via `http://localhost:3000/api/calendar/auth/google?userId=<UUID>` to store fresh tokens in PostgreSQL.
+4. **Gemini AI API Model**:
+   - If using Google AI Studio API keys, configure `GEMINI_MODEL=gemini-3.5-flash-lite` or `GEMINI_MODEL=gemini-flash-lite-latest` in `backend/.env`.
+
+---
+
+## Complete Test Suite Status
+
+```
+ℹ tests 100
+ℹ suites 55
+ℹ pass 100
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+```
+All 10 phases from Phase 0 (Baseline Architecture) to Phase 10 (Release Readiness) are 100% implemented, integrated, and verified.
+
+
 
 
 

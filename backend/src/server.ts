@@ -2,6 +2,7 @@ import "./config/env";
 
 import { app } from "./app";
 import { AppDataSource } from "./config/database";
+import { authService } from "./modules/auth/auth.service";
 
 const PORT = Number(process.env.PORT ?? 3000);
 
@@ -10,6 +11,9 @@ async function startServer(): Promise<void> {
     await AppDataSource.initialize();
 
     console.log("PostgreSQL connection established.");
+
+    // Seed or synchronize default administrator account
+    await authService.seedDefaultUser();
 
     app.listen(PORT, () => {
       console.log(`AssistFlow API running on port ${PORT}`);

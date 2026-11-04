@@ -154,6 +154,8 @@ describe("Phase 6 Gemini Natural-Language Interpretation & Session Tests", () =>
 
   describe("Multi-Turn Slot Filling & Clarification Workflow", () => {
     it("should detect missing parameter, ask clarification, save session draft, and complete upon next turn", async () => {
+      const futureScheduledAt = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+
       // Mock transport simulates Gemini conversational dialogue:
       // Turn 1: User asks to remind, but no time is given -> clarification_needed
       // Turn 2: User provides time -> reminder_create completed
@@ -164,7 +166,7 @@ describe("Phase 6 Gemini Natural-Language Interpretation & Session Tests", () =>
             intent: "reminder_create",
             params: {
               title: "Call the accountant",
-              scheduledAt: "2026-11-03T11:00:00.000Z",
+              scheduledAt: futureScheduledAt,
             },
           });
         }
@@ -231,7 +233,7 @@ describe("Phase 6 Gemini Natural-Language Interpretation & Session Tests", () =>
       assert.ok(body2.data.pendingAction);
       assert.equal(body2.data.pendingAction.actionType, PendingActionType.REMINDER_CREATE);
       assert.equal(body2.data.pendingAction.payload.title, "Call the accountant");
-      assert.equal(body2.data.pendingAction.payload.scheduledAt, "2026-11-03T11:00:00.000Z");
+      assert.equal(body2.data.pendingAction.payload.scheduledAt, futureScheduledAt);
 
       // Verify activeDraft in session was cleared after intent completion
       const sessionUpdated = await sessionRepo.findOneBy({ id: sessionId });
@@ -268,6 +270,82 @@ describe("Phase 6 Gemini Natural-Language Interpretation & Session Tests", () =>
       assert.ok(reminderInDb);
       assert.equal(reminderInDb.title, "Call the accountant");
       assert.equal(reminderInDb.status, ReminderStatus.SCHEDULED);
+    });
+
+    it("should require at least one attendee email during meeting creation and return Google Meet link on confirmation", async () => {
+      // Turn 1: calendar_create with missing attendees returns clarification question
+      geminiClient.setTransport(async () => {
+        return JSON.stringify({
+          intent: "calendar_create",
+          params: {
+            summary: "Product Sync",
+            startAt: "2026-11-04T10:00:00.000Z",
+            endAt: "2026-11-04T11:00:00.000Z",
+            attendees: [],
+          },
+        });
+      });
+
+      const res1 = await fetch(`${baseUrl}/api/assistant/message`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": user.id,
+        },
+        body: JSON.stringify({ message: "Schedule Product Sync tomorrow from 10am to 11am" }),
+      });
+
+      assert.equal(res1.status, 200);
+      const body1 = (await res1.json()) as any;
+      assert.match(body1.data.response, /attendee email address/i);
+
+      // Turn 2: User provides attendee email, proposal is generated
+      geminiClient.setTransport(async () => {
+        return JSON.stringify({
+          intent: "calendar_create",
+          params: {
+            summary: "Product Sync",
+            startAt: "2026-11-04T10:00:00.000Z",
+            endAt: "2026-11-04T11:00:00.000Z",
+            attendees: ["colleague@example.com"],
+          },
+        });
+      });
+
+      const res2 = await fetch(`${baseUrl}/api/assistant/message`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": user.id,
+        },
+        body: JSON.stringify({ message: "With colleague@example.com" }),
+      });
+
+      assert.equal(res2.status, 200);
+      const body2 = (await res2.json()) as any;
+      assert.equal(body2.data.intent, "calendar_create");
+      assert.ok(body2.data.pendingAction);
+
+      // Turn 3: User confirms, response returns Google Meet link
+      geminiClient.setTransport(async () => {
+        return JSON.stringify({
+          intent: "confirmation_reply",
+          params: { confirmed: true, rawReply: "yes" },
+        });
+      });
+
+      const res3 = await fetch(`${baseUrl}/api/assistant/message`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": user.id,
+        },
+        body: JSON.stringify({ message: "yes" }),
+      });
+
+      assert.equal(res3.status, 200);
+      const body3 = (await res3.json()) as any;
+      assert.match(body3.data.response, /Google Meet Link/i);
     });
   });
 

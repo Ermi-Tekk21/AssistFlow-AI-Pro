@@ -205,10 +205,14 @@ describe("Phase 5 n8n Scheduled Workflows Tests", () => {
         })
       );
 
-      // Trigger daily briefing workflow
+      // Trigger daily briefing workflow for user1
       const res = await fetch(`${baseUrl}/api/workflows/briefing/trigger`, {
         method: "POST",
-        headers: { "x-workflow-secret": testWorkflowSecret },
+        headers: {
+          "Content-Type": "application/json",
+          "x-workflow-secret": testWorkflowSecret,
+        },
+        body: JSON.stringify({ forceUserId: user1.id }),
       });
 
       assert.equal(res.status, 200);
