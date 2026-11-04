@@ -252,25 +252,30 @@ export const Sidebar: React.FC = () => {
 
         {/* Bottom: Theme Switcher, User Card & Sign Out */}
         <div className="p-3 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-[#080E1E]/50 space-y-2.5">
-          {/* Night Mode Toggle Button */}
+          {/* Theme Switcher Toggle Button */}
           <button
             onClick={toggleTheme}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 border border-transparent dark:border-slate-800 transition-colors"
-            title="Toggle Dark Blue Night Mode"
+            className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 transition-colors"
+            title="Switch between Light and Night Mode"
           >
             <div className="flex items-center space-x-2.5">
               {theme === "dark" ? (
-                <Moon className="w-4 h-4 text-blue-400" />
+                <Moon className="w-4 h-4 text-blue-400 shrink-0" />
               ) : (
-                <Sun className="w-4 h-4 text-amber-500" />
+                <Sun className="w-4 h-4 text-amber-500 shrink-0" />
               )}
-              <span className="tracking-tight">
-                {theme === "dark" ? "Night Mode" : "Light Mode"}
+              <span className="tracking-tight font-medium">
+                {theme === "dark" ? "Night Mode (Dark Blue)" : "Light Mode"}
               </span>
             </div>
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-blue-950/80 text-slate-700 dark:text-blue-300 border border-slate-300/60 dark:border-blue-800/60">
-              {theme === "dark" ? "Dark Blue" : "Light"}
-            </span>
+            {/* Real sliding pill toggle */}
+            <div
+              className={`w-8 h-4.5 rounded-full transition-colors relative flex items-center px-0.5 ${
+                theme === "dark" ? "bg-blue-600 justify-end" : "bg-slate-300 justify-start"
+              }`}
+            >
+              <div className="w-3.5 h-3.5 rounded-full bg-white shadow-xs" />
+            </div>
           </button>
 
           {/* User Profile Card */}
