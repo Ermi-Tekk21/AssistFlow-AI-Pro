@@ -3,6 +3,8 @@ import jwt from "jsonwebtoken";
 import { AppDataSource } from "../../config/database";
 import { User } from "../../entities/User";
 import { IntegrationAccount } from "../../entities/IntegrationAccount";
+import { DailyBriefingRecord } from "../../entities/DailyBriefingRecord";
+import { briefingService } from "../briefing/briefing.service";
 import { ForbiddenError, NotFoundError, UnauthorizedError, BadRequestError } from "../../middleware/errors";
 import { JWT_SECRET } from "../../middleware/auth";
 
@@ -172,6 +174,14 @@ export class AuthService {
       throw new NotFoundError("User not found.");
     }
 
+    const norm = (t?: string | null) => (t ? t.slice(0, 5) : null);
+    const briefingTimeChanged =
+      updates.dailyBriefingTime !== undefined &&
+      norm(updates.dailyBriefingTime) !== norm(user.dailyBriefingTime);
+
+    const briefingReEnabled =
+      updates.dailyBriefingEnabled === true && !user.dailyBriefingEnabled;
+
     if (updates.firstName !== undefined) {
       user.firstName = updates.firstName.trim();
     }
@@ -191,6 +201,25 @@ export class AuthService {
     // Note: user.email is NEVER updated here, keeping it immutable.
 
     const saved = await this.userRepo.save(user);
+
+    // If the briefing schedule time was modified or re-enabled, reset today's briefing record
+    // so the new scheduled time can successfully dispatch today
+    if (briefingTimeChanged || briefingReEnabled) {
+      try {
+        const tz = user.timezone || "Africa/Addis_Ababa";
+        const { localDateStr } = briefingService.getLocalDayBounds(tz);
+        await AppDataSource.getRepository(DailyBriefingRecord).delete({
+          userId: user.id,
+          briefingDate: localDateStr,
+        });
+        console.log(
+          `[AuthService] Reset daily briefing record for ${user.email} on ${localDateStr} due to schedule change.`
+        );
+      } catch (err: any) {
+        console.warn("[AuthService] Could not reset daily briefing record:", err.message);
+      }
+    }
+
     const { passwordHash: _, ...safeUser } = saved;
     return safeUser as Omit<User, "passwordHash">;
   }

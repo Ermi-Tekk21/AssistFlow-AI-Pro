@@ -200,7 +200,7 @@ export class AssistantService {
 
     // Fast-path resolution for direct affirmative/negative replies when a confirmation is pending
     const trimmed = message.trim().toLowerCase();
-    const isAffirmative = /^(yes|y|yeah|yup|sure|ok|okay|confirm|proceed|accept|do it)$/i.test(trimmed);
+    const isAffirmative = /^(yes|yse|y|ye|ys|yeah|yup|yess|sure|ok|okay|confirm|proceed|accept|do it)$/i.test(trimmed);
     const isNegative = /^(no|n|nope|cancel|reject|deny|abort|never mind|dont|don't)$/i.test(trimmed);
 
     let intentResult: AssistantIntent;
@@ -210,6 +210,7 @@ export class AssistantService {
         params: {
           confirmed: isAffirmative,
           actionId: activePendingAction?.id,
+          rawReply: trimmed,
         },
       };
     } else {
@@ -310,11 +311,15 @@ export class AssistantService {
             where: { id: intentResult.params.taskId, userId },
           });
         } else if (intentResult.params.query) {
+          const cleanQuery = intentResult.params.query.trim();
           task = await this.taskRepo
             .createQueryBuilder("task")
             .where("task.userId = :userId", { userId })
             .andWhere("task.status = :status", { status: TaskStatus.PENDING })
-            .andWhere("task.title ILIKE :q", { q: `%${intentResult.params.query}%` })
+            .andWhere("(task.title ILIKE :q OR :rawQuery ILIKE ('%' || task.title || '%'))", {
+              q: `%${cleanQuery}%`,
+              rawQuery: cleanQuery,
+            })
             .orderBy("task.createdAt", "DESC")
             .getOne();
         }
@@ -330,7 +335,7 @@ export class AssistantService {
         proposedPendingAction = await confirmationsService.proposeAction(userId, {
           actionType: PendingActionType.TASK_COMPLETE,
           proposal,
-          payload: {},
+          payload: { id: task.id },
           targetEntityId: task.id,
           targetEntityType: "task",
           expiresInMinutes: 10,
@@ -348,10 +353,14 @@ export class AssistantService {
             where: { id: intentResult.params.taskId, userId },
           });
         } else if (intentResult.params.query) {
+          const cleanQuery = intentResult.params.query.trim();
           task = await this.taskRepo
             .createQueryBuilder("task")
             .where("task.userId = :userId", { userId })
-            .andWhere("task.title ILIKE :q", { q: `%${intentResult.params.query}%` })
+            .andWhere("(task.title ILIKE :q OR :rawQuery ILIKE ('%' || task.title || '%'))", {
+              q: `%${cleanQuery}%`,
+              rawQuery: cleanQuery,
+            })
             .orderBy("task.createdAt", "DESC")
             .getOne();
         }
@@ -375,7 +384,7 @@ export class AssistantService {
         proposedPendingAction = await confirmationsService.proposeAction(userId, {
           actionType: PendingActionType.TASK_UPDATE,
           proposal,
-          payload: updates,
+          payload: { id: task.id, input: updates, ...updates },
           targetEntityId: task.id,
           targetEntityType: "task",
           expiresInMinutes: 10,
@@ -393,10 +402,14 @@ export class AssistantService {
             where: { id: intentResult.params.taskId, userId },
           });
         } else if (intentResult.params.query) {
+          const cleanQuery = intentResult.params.query.trim();
           task = await this.taskRepo
             .createQueryBuilder("task")
             .where("task.userId = :userId", { userId })
-            .andWhere("task.title ILIKE :q", { q: `%${intentResult.params.query}%` })
+            .andWhere("(task.title ILIKE :q OR :rawQuery ILIKE ('%' || task.title || '%'))", {
+              q: `%${cleanQuery}%`,
+              rawQuery: cleanQuery,
+            })
             .getOne();
         }
 
@@ -411,7 +424,7 @@ export class AssistantService {
         proposedPendingAction = await confirmationsService.proposeAction(userId, {
           actionType: PendingActionType.TASK_DELETE,
           proposal,
-          payload: {},
+          payload: { id: task.id },
           targetEntityId: task.id,
           targetEntityType: "task",
           expiresInMinutes: 10,
@@ -422,8 +435,19 @@ export class AssistantService {
       }
 
       case "reminder_create": {
-        session.activeDraft = null;
         const { title, scheduledAt, description } = intentResult.params;
+
+        if (!scheduledAt) {
+          session.activeDraft = {
+            intent: "reminder_create",
+            params: intentResult.params,
+            missingFields: ["scheduledAt"],
+          };
+          responseText = `When would you like to be reminded about "${title}"? Please specify the exact date and time (e.g. "tomorrow at 3 PM" or "in 20 minutes").`;
+          break;
+        }
+
+        session.activeDraft = null;
         const proposal = `Schedule reminder "${title}" for ${this.formatUserTime(scheduledAt, user.timezone)}`;
 
         proposedPendingAction = await confirmationsService.proposeAction(userId, {
@@ -471,7 +495,7 @@ export class AssistantService {
         proposedPendingAction = await confirmationsService.proposeAction(userId, {
           actionType: PendingActionType.REMINDER_SNOOZE,
           proposal,
-          payload: { minutes },
+          payload: { id: reminder.id, snoozeMinutes: minutes, input: { snoozeMinutes: minutes } },
           targetEntityId: reminder.id,
           targetEntityType: "reminder",
           expiresInMinutes: 10,
@@ -508,7 +532,7 @@ export class AssistantService {
         proposedPendingAction = await confirmationsService.proposeAction(userId, {
           actionType: PendingActionType.REMINDER_CANCEL,
           proposal,
-          payload: {},
+          payload: { id: reminder.id },
           targetEntityId: reminder.id,
           targetEntityType: "reminder",
           expiresInMinutes: 10,
@@ -598,25 +622,51 @@ export class AssistantService {
       case "calendar_create": {
         const { summary, startAt, endAt, description, location, attendees } = intentResult.params;
 
-        // Require at least one attendee email for meeting creation
-        if (!attendees || attendees.length === 0) {
+        // Verify all required slots: startAt, endAt (duration), and attendees
+        const missingFields: string[] = [];
+        if (!startAt) missingFields.push("startAt");
+        if (!endAt) missingFields.push("duration");
+        if (!attendees || attendees.length === 0) missingFields.push("attendees");
+
+        if (missingFields.length > 0) {
           session.activeDraft = {
             intent: "calendar_create",
             params: intentResult.params,
-            missingFields: ["attendees"],
+            missingFields,
           };
-          responseText = `Who will be attending "${summary}"? Please provide at least one attendee email address (e.g. colleague@example.com) to complete the meeting invite.`;
+
+          if (missingFields.includes("startAt") && missingFields.includes("duration") && missingFields.includes("attendees")) {
+            responseText = `Please provide the start time, meeting duration (e.g. 30 minutes, 1 hour), and at least one attendee email address for "${summary}".`;
+          } else if (missingFields.includes("duration") && missingFields.includes("attendees")) {
+            responseText = `Please provide the meeting duration (e.g. 30 minutes, 1 hour) and at least one attendee email address for "${summary}".`;
+          } else if (missingFields.includes("startAt")) {
+            responseText = `When should the meeting "${summary}" start?`;
+          } else if (missingFields.includes("duration")) {
+            responseText = `What is the duration of this meeting (e.g. 30 minutes, 1 hour)?`;
+          } else {
+            responseText = `Who will be attending "${summary}"? Please provide at least one attendee email address (e.g. colleague@example.com).`;
+          }
           break;
         }
 
         session.activeDraft = null;
-        const attendeesStr = attendees.join(", ");
-        const proposal = `Create meeting "${summary}" from ${this.formatUserTime(startAt, user.timezone)} to ${this.formatUserTime(endAt, user.timezone)} with attendees: ${attendeesStr}`;
+        const confirmedAttendees = attendees!;
+        const confirmedStartAt = startAt!;
+        const confirmedEndAt = endAt!;
+        const attendeesStr = confirmedAttendees.join(", ");
+        const proposal = `Create meeting "${summary}" from ${this.formatUserTime(confirmedStartAt, user.timezone)} to ${this.formatUserTime(confirmedEndAt, user.timezone)} with attendees: ${attendeesStr}`;
 
         proposedPendingAction = await confirmationsService.proposeAction(userId, {
           actionType: PendingActionType.CALENDAR_EVENT_CREATE,
           proposal,
-          payload: { summary, startAt, endAt, description, location, attendees },
+          payload: {
+            summary,
+            startAt: confirmedStartAt,
+            endAt: confirmedEndAt,
+            description,
+            location,
+            attendees: confirmedAttendees,
+          },
           expiresInMinutes: 10,
         });
 

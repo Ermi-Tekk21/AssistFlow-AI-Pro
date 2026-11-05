@@ -135,7 +135,9 @@ export class CalendarController {
         throw new Error("Missing Google OAuth Client ID or Client Secret");
       }
 
-      let tokenRes: Response;
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+
+      let tokenRes: globalThis.Response;
       try {
         tokenRes = await fetch("https://oauth2.googleapis.com/token", {
           method: "POST",
@@ -151,7 +153,7 @@ export class CalendarController {
       } catch (fetchErr: any) {
         console.error("[Google OAuth Network Error]:", fetchErr);
         res.redirect(
-          `http://localhost:5173/?google_error=${encodeURIComponent(
+          `${frontendUrl}/?google_error=${encodeURIComponent(
             fetchErr.message || "Network timeout connecting to Google OAuth"
           )}`
         );
@@ -171,7 +173,7 @@ export class CalendarController {
           }
         } catch {}
         res.redirect(
-          `http://localhost:5173/?google_error=${encodeURIComponent(errorMsg)}`
+          `${frontendUrl}/?google_error=${encodeURIComponent(errorMsg)}`
         );
         return;
       }
@@ -225,7 +227,7 @@ export class CalendarController {
         console.log(`[Google OAuth] Permanent Refresh Token: ${refreshToken}`);
       }
 
-      res.redirect("http://localhost:5173/?google_connected=true");
+      res.redirect(`${frontendUrl}/?google_connected=true`);
     } catch (err) {
       next(err);
     }
