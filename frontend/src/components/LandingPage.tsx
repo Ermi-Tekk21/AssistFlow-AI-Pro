@@ -13,6 +13,7 @@ import {
   UserCheck,
   Sun,
   Moon,
+  Download,
 } from "lucide-react";
 
 export const LandingPage: React.FC = () => {
@@ -110,6 +111,22 @@ export const LandingPage: React.FC = () => {
               Create Account
               <ArrowRight className="w-4 h-4 ml-1.5 text-slate-400" />
             </Button>
+          </div>
+
+          {/* Android APK Download Direct Link */}
+          <div className="mt-4 flex items-center justify-center">
+            <a
+              href="/downloads/AssistFlow-AI.apk"
+              download="AssistFlow-AI.apk"
+              className="inline-flex items-center space-x-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 bg-white/80 dark:bg-[#0B132B]/80 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-full px-3.5 py-1.5 transition-all shadow-xs"
+              title="Download direct Android APK file"
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Download APK for Android</span>
+              <span className="text-[10px] bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded-full font-mono">
+                v1.0 APK
+              </span>
+            </a>
           </div>
         </section>
 
@@ -219,6 +236,14 @@ export const LandingPage: React.FC = () => {
             © 2026 AssistFlow AI. Autonomous executive assistant project for Ermias Teklemarkos.
           </div>
           <div className="flex flex-wrap items-center justify-center sm:justify-end gap-3 sm:gap-4">
+            <a
+              href="/downloads/AssistFlow-AI.apk"
+              download="AssistFlow-AI.apk"
+              className="inline-flex items-center space-x-1.5 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Download Android APK</span>
+            </a>
             <button
               onClick={() => setIsComingSoonOpen(true)}
               className="hover:text-slate-900 dark:hover:text-white transition-colors"
