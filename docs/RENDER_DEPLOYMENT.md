@@ -52,7 +52,7 @@ git push origin prod_v.1.0
 ### Step 2: Create a Blueprint on Render
 1. Log in to [dashboard.render.com](https://dashboard.render.com).
 2. Click **New +** in the top navigation bar and select **Blueprint**.
-3. Connect your repository (`AssistFlow-AI-Pro` or `AssistFlow-AI-Prp`).
+3. Connect your repository (`AssistFlow-AI-Pro`).
 4. Select the branch: **`prod_v.1.0`**.
 5. Render will automatically parse [`render.yaml`](../render.yaml) and display the three resources:
    - `assistflow-postgres` (Database)

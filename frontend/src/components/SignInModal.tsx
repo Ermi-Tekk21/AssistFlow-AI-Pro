@@ -9,13 +9,10 @@ interface SignInModalProps {
   onClose: () => void;
 }
 
-const DEFAULT_EMAIL =
-  import.meta.env.VITE_DEFAULT_USER_EMAIL || "ermiasteklemarkos@gmail.com";
-
 export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose }) => {
   const { login, authLoading } = useStore();
-  const [email, setEmail] = useState(DEFAULT_EMAIL);
-  const [password, setPassword] = useState("password123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -28,44 +25,35 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose }) => 
     if (success) {
       onClose();
     } else {
-      setErrorMessage(
-        email.trim().toLowerCase() !== DEFAULT_EMAIL.toLowerCase()
-          ? `Access restricted: Only default user (${DEFAULT_EMAIL}) can sign in currently. Self-serve registration is coming soon.`
-          : "Invalid email or password. Please verify your credentials."
-      );
+      setErrorMessage("Invalid email or password. Please verify your credentials.");
     }
   };
 
-  const handleFillDefault = () => {
-    setEmail(DEFAULT_EMAIL);
-    setPassword("password123");
-    setErrorMessage(null);
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-      <div className="bg-white dark:bg-[#0F172A] border border-slate-300 dark:border-slate-800 rounded-lg shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-sm overflow-y-auto">
+      <div className="bg-white dark:bg-[#0F172A] border border-slate-300 dark:border-slate-800 rounded-lg shadow-xl w-full max-w-md max-h-[90dvh] flex flex-col my-auto overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Modal Header */}
-        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-[#0B132B]">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300">
+        <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-[#0B132B] shrink-0">
+          <div className="flex items-center space-x-2.5">
+            <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 shrink-0">
               <Lock className="w-4 h-4 text-slate-700 dark:text-blue-400" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Sign In to AssistFlow AI</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Executive Autonomous Assistant Portal</p>
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-white leading-tight">Sign In to AssistFlow AI</h3>
+              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">Executive Autonomous Assistant Portal</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-md hover:bg-slate-200 dark:hover:bg-slate-800"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-md hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+            title="Close"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-3.5 sm:space-y-4 overflow-y-auto flex-1">
           {errorMessage && (
             <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 rounded-md text-xs text-red-700 dark:text-red-300 flex items-start space-x-2">
               <AlertCircle className="w-4 h-4 shrink-0 text-red-500 mt-0.5" />
@@ -74,9 +62,8 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose }) => 
           )}
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center justify-between">
-              <span>Account Email</span>
-              <span className="text-[11px] text-slate-400 font-normal">Default: {DEFAULT_EMAIL}</span>
+            <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+              Account Email
             </label>
             <div className="relative">
               <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
@@ -85,16 +72,15 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose }) => 
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder={DEFAULT_EMAIL}
+                placeholder="name@example.com"
                 className="pl-8 text-xs font-mono"
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center justify-between">
-              <span>Password</span>
-              <span className="text-[11px] text-slate-400 font-normal">Default: password123</span>
+            <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+              Password
             </label>
             <div className="relative">
               <KeyRound className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
@@ -109,21 +95,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose }) => 
             </div>
           </div>
 
-          {/* Quick-fill helper banner */}
-          <div className="p-2.5 bg-slate-50 dark:bg-[#080E1E] border border-slate-200 dark:border-slate-800 rounded text-xs text-slate-600 dark:text-slate-400 flex items-center justify-between">
-            <div className="text-[11px]">
-              <span className="font-semibold text-slate-700 dark:text-slate-300">Single-User Mode:</span> configured for Ermias Teklemarkos
-            </div>
-            <button
-              type="button"
-              onClick={handleFillDefault}
-              className="text-[11px] font-medium text-slate-900 underline hover:text-slate-700 dark:text-blue-400 dark:hover:text-blue-300 ml-2"
-            >
-              Fill Default
-            </button>
-          </div>
-
-          <div className="pt-2 flex items-center justify-end space-x-2">
+          <div className="pt-2 flex items-center justify-end space-x-2 shrink-0">
             <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={authLoading}>
               Cancel
             </Button>

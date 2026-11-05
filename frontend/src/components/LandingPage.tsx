@@ -24,24 +24,24 @@ export const LandingPage: React.FC = () => {
     <div className="min-h-screen bg-slate-50 dark:bg-[#080E1E] text-slate-900 dark:text-slate-100 flex flex-col justify-between selection:bg-slate-200 dark:selection:bg-blue-600 selection:text-slate-900 dark:selection:text-white transition-colors">
       {/* Top Navigation */}
       <header className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0B132B] sticky top-0 z-30 transition-colors">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-blue-600 text-white flex items-center justify-center font-bold text-sm tracking-tight shadow-sm">
+        <div className="max-w-6xl mx-auto px-3 sm:px-6 h-14 flex items-center justify-between gap-2">
+          <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-blue-600 text-white flex items-center justify-center font-bold text-sm tracking-tight shadow-sm shrink-0">
               AF
             </div>
             <div>
-              <div className="flex items-center space-x-2">
-                <span className="font-semibold text-sm tracking-tight text-slate-900 dark:text-white">
+              <div className="flex items-center space-x-1.5 sm:space-x-2">
+                <span className="font-semibold text-xs sm:text-sm tracking-tight text-slate-900 dark:text-white">
                   AssistFlow AI
                 </span>
-                <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded font-mono border border-slate-200 dark:border-slate-700">
+                <span className="hidden sm:inline-block text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded font-mono border border-slate-200 dark:border-slate-700">
                   v1.0 Pro
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
             {/* Theme Switcher Button */}
             <button
               onClick={toggleTheme}
@@ -59,14 +59,14 @@ export const LandingPage: React.FC = () => {
               variant="outline"
               size="sm"
               onClick={() => setIsComingSoonOpen(true)}
-              className="text-xs"
+              className="text-xs px-2.5 sm:px-3 h-8"
             >
               Create Account
             </Button>
             <Button
               size="sm"
               onClick={() => setIsSignInOpen(true)}
-              className="text-xs"
+              className="text-xs px-2.5 sm:px-3 h-8"
             >
               Sign In
             </Button>
@@ -76,27 +76,27 @@ export const LandingPage: React.FC = () => {
 
       {/* Hero Section */}
       <main className="flex-1">
-        <section className="max-w-4xl mx-auto px-4 sm:px-6 pt-16 pb-12 text-center">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 mb-6 font-mono">
-            <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-            <span>Autonomous Executive Assistant Powered by Gemini 3.5</span>
+        <section className="max-w-4xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-8 sm:pb-12 text-center">
+          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-[11px] sm:text-xs text-slate-700 dark:text-slate-300 mb-4 sm:mb-6 font-mono max-w-full">
+            <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+            <span className="truncate sm:whitespace-normal">Autonomous Executive Assistant Powered by Gemini 3.5</span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight px-1">
             Autonomous Executive Orchestration for High-Impact Days
           </h1>
 
-          <p className="mt-4 text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
+          <p className="mt-3 sm:mt-4 text-xs sm:text-base text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
             Manage priorities conversationally, schedule calendar meetings with auto-provisioned
             Google Meet rooms and attendee invites, and receive curated executive morning briefings
             delivered straight to your Telegram phone.
           </p>
 
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-3 w-full sm:w-auto px-2">
             <Button
               size="lg"
               onClick={() => setIsSignInOpen(true)}
-              className="w-full sm:w-auto text-sm px-6 font-medium"
+              className="w-full sm:w-auto text-sm px-6 font-medium h-10 sm:h-11"
             >
               <UserCheck className="w-4 h-4 mr-2" />
               Sign In
@@ -105,7 +105,7 @@ export const LandingPage: React.FC = () => {
               variant="outline"
               size="lg"
               onClick={() => setIsComingSoonOpen(true)}
-              className="w-full sm:w-auto text-sm px-6"
+              className="w-full sm:w-auto text-sm px-6 h-10 sm:h-11"
             >
               Create Account
               <ArrowRight className="w-4 h-4 ml-1.5 text-slate-400" />
@@ -190,22 +190,22 @@ export const LandingPage: React.FC = () => {
             <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-3">
               System Architecture & Connected Services
             </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-              <div className="bg-white dark:bg-[#0F172A] p-3 rounded border border-slate-200 dark:border-slate-800">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 text-center">
+              <div className="bg-white dark:bg-[#0F172A] p-2.5 sm:p-3 rounded border border-slate-200 dark:border-slate-800">
                 <div className="text-xs font-bold text-slate-800 dark:text-white">Gemini 3.5</div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Intent Reasoning</div>
+                <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Intent Reasoning</div>
               </div>
-              <div className="bg-white dark:bg-[#0F172A] p-3 rounded border border-slate-200 dark:border-slate-800">
+              <div className="bg-white dark:bg-[#0F172A] p-2.5 sm:p-3 rounded border border-slate-200 dark:border-slate-800">
                 <div className="text-xs font-bold text-slate-800 dark:text-white">Google Meet</div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Calendar API</div>
+                <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Calendar API</div>
               </div>
-              <div className="bg-white dark:bg-[#0F172A] p-3 rounded border border-slate-200 dark:border-slate-800">
+              <div className="bg-white dark:bg-[#0F172A] p-2.5 sm:p-3 rounded border border-slate-200 dark:border-slate-800">
                 <div className="text-xs font-bold text-slate-800 dark:text-white">Telegram Bot</div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Push Delivery</div>
+                <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Push Delivery</div>
               </div>
-              <div className="bg-white dark:bg-[#0F172A] p-3 rounded border border-slate-200 dark:border-slate-800">
+              <div className="bg-white dark:bg-[#0F172A] p-2.5 sm:p-3 rounded border border-slate-200 dark:border-slate-800">
                 <div className="text-xs font-bold text-slate-800 dark:text-white">PostgreSQL</div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">ACID State Store</div>
+                <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">ACID State Store</div>
               </div>
             </div>
           </div>
@@ -213,12 +213,12 @@ export const LandingPage: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0B132B] py-6 transition-colors">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
+      <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0B132B] py-5 sm:py-6 transition-colors">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400 text-center sm:text-left">
           <div>
             © 2026 AssistFlow AI. Autonomous executive assistant project for Ermias Teklemarkos.
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-3 sm:gap-4">
             <button
               onClick={() => setIsComingSoonOpen(true)}
               className="hover:text-slate-900 dark:hover:text-white transition-colors"

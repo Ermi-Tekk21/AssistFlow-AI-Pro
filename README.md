@@ -10,7 +10,7 @@ AssistFlow AI is a personal AI executive assistant that enables users to manage 
 ## Project Structure
 
 ```
-AssistFlow-AI-Prp/
+AssistFlow-AI-Pro/
 ├── backend/
 │   ├── migrations/               # TypeORM schema migrations
 │   ├── src/
