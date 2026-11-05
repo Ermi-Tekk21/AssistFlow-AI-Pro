@@ -64,17 +64,33 @@ TIMEZONE & RELATIVE DATE RULES:
 6. If a date is ambiguous (e.g. "on the 5th" without month, or "at 3" without AM/PM or date), return intent "clarification_needed" with question asking for the exact date/time.
 
 SLOT-FILLING & CLARIFICATION RULES:
-1. For "reminder_create", title and scheduledAt are MANDATORY. If the user says "remind me to call John" without a time, DO NOT guess a time. Respond with:
-   {"intent": "clarification_needed", "params": {"question": "When would you like me to remind you to call John?", "missingFields": ["scheduledAt"], "partialIntent": "reminder_create", "partialParams": {"title": "Call John"}}}
-2. For "task_create", title is MANDATORY.
-3. For "calendar_create", summary, startAt, endAt, and attendees (at least one valid attendee email address) are MANDATORY.
-   If the user asks to schedule a meeting or calendar event without providing at least one attendee email, DO NOT create the proposal yet. Respond with:
-   {"intent": "clarification_needed", "params": {"question": "Who will be attending this meeting? Please provide at least one attendee email address (e.g. colleague@example.com).", "missingFields": ["attendees"], "partialIntent": "calendar_create", "partialParams": {"summary": "..."}}}
+1. For "reminder_create":
+   - "title" and "scheduledAt" are STRICTLY MANDATORY.
+   - If the user provides a reminder without specifying an exact scheduled time (e.g. "remind me to call John", "remind me to buy groceries", or "remind me tomorrow" without hour/minute), DO NOT GUESS OR PICK A DEFAULT TIME!
+   - You MUST respond with "clarification_needed":
+     {"intent": "clarification_needed", "params": {"question": "When would you like me to remind you to [title]?", "missingFields": ["scheduledAt"], "partialIntent": "reminder_create", "partialParams": {"title": "[title]"}}}
+2. For "task_create": "title" is MANDATORY.
+3. For "calendar_create":
+   - "summary", "startAt", "endAt" (duration), and "attendees" (at least one valid attendee email address) are ALL STRICTLY MANDATORY.
+   - START TIME: If the user did not specify when the meeting starts, DO NOT GUESS. Ask for the meeting start time.
+   - DURATION / END TIME: If the user did not specify the meeting duration (e.g. "for 30 minutes", "for one hour") or end time, DO NOT DEFAULT TO 1 HOUR. Ask for the duration of the meeting.
+   - ATTENDEES: If the user did not provide at least one attendee email, DO NOT schedule yet. Ask for at least one attendee email address.
+   - If ANY of these required fields is missing, respond with "clarification_needed":
+     - If attendee email is missing:
+       {"intent": "clarification_needed", "params": {"question": "Who will be attending this meeting? Please provide at least one attendee email address (e.g. colleague@example.com).", "missingFields": ["attendees"], "partialIntent": "calendar_create", "partialParams": {"summary": "[summary]", "startAt": "...", "endAt": "..."}}}
+     - If duration/endAt is missing:
+       {"intent": "clarification_needed", "params": {"question": "What is the duration of this meeting (e.g. 30 minutes, 1 hour)?", "missingFields": ["duration"], "partialIntent": "calendar_create", "partialParams": {"summary": "[summary]", "startAt": "...", "attendees": ["..."]}}}
+     - If startAt is missing:
+       {"intent": "clarification_needed", "params": {"question": "When should this meeting start?", "missingFields": ["startAt"], "partialIntent": "calendar_create", "partialParams": {"summary": "[summary]", "attendees": ["..."]}}}
+     - If both duration and attendees are missing:
+       {"intent": "clarification_needed", "params": {"question": "Please provide the meeting duration (e.g. 30 minutes, 1 hour) and at least one attendee email address.", "missingFields": ["duration", "attendees"], "partialIntent": "calendar_create", "partialParams": {"summary": "[summary]", "startAt": "..."}}}
 4. Active Session Draft:
 ${
   context.activeDraft
     ? `   There is an ACTIVE DRAFT awaiting missing fields: ${JSON.stringify(context.activeDraft)}.
-   If the user's latest message provides the missing information (e.g., provides the date/time), merge the provided information with the draft params and return the COMPLETED intent (e.g. "reminder_create" or "calendar_create").`
+   If the user's latest message provides the missing information (e.g., provides the duration, date/time, or attendee email), merge the provided information with the draft params.
+   If the draft is missing "duration" and the user provides a duration (e.g., "for 45 minutes", "1 hour"), calculate endAt = startAt + duration.
+   When all mandatory fields (summary, startAt, endAt, and attendees) are filled, return the COMPLETED intent "calendar_create" or "reminder_create".`
     : `   (No active draft)`
 }
 

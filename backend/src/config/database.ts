@@ -18,11 +18,23 @@ import { DailyBriefingRecord } from "../entities/DailyBriefingRecord";
 export const AppDataSource = new DataSource({
   type: "postgres",
 
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT ?? 5432),
-  username: process.env.DB_USERNAME,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_DATABASE,
+  ...(process.env.DATABASE_URL
+    ? { url: process.env.DATABASE_URL }
+    : {
+        host: process.env.DB_HOST,
+        port: Number(process.env.DB_PORT ?? 5432),
+        username: process.env.DB_USERNAME,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_DATABASE,
+      }),
+
+  ssl:
+    process.env.DATABASE_SSL === "true" ||
+    (Boolean(process.env.DATABASE_URL) &&
+      !process.env.DATABASE_URL?.includes("localhost") &&
+      !process.env.DATABASE_URL?.includes("127.0.0.1"))
+      ? { rejectUnauthorized: false }
+      : false,
 
   entities: [
     User,
@@ -38,7 +50,7 @@ export const AppDataSource = new DataSource({
     DailyBriefingRecord,
   ],
 
-  migrations: [__dirname + "/../../migrations/*{.ts,.js}"],
+  migrations: [__dirname + "/../migrations/*{.ts,.js}"],
 
   synchronize: false,
 

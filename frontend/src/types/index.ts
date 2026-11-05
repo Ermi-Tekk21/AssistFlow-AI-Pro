@@ -144,4 +144,4 @@ export interface UserProfile {
   updatedAt?: string;
 }
 
-export type NavTab = "chat" | "tasks" | "reminders" | "calendar" | "briefing" | "profile";
+export type NavTab = "briefing" | "chat" | "tasks" | "reminders" | "calendar" | "profile";

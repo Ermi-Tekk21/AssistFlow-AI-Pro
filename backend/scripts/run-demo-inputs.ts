@@ -99,8 +99,15 @@ async function runDemos() {
   await sendMessage("Cancel my project review meeting with Sami.");
   await sendMessage("yes");
 
+  // Demo 9 – Conversational Task Update & Completion Confirmation
+  console.log("\n>>> DEMO 9: Conversational Task Update & Completion <<<");
+  await sendMessage("Update task finish the quarterly performance report to also include executive summary.");
+  await sendMessage("yes");
+  await sendMessage("Mark task finish the quarterly performance report as completed.");
+  await sendMessage("yes");
+
   console.log("\n=======================================================");
-  console.log("✓ All 8 Live Demo Scenarios Executed Successfully!");
+  console.log("✓ All 9 Live Demo Scenarios Executed Successfully!");
   console.log("=======================================================\n");
 }
 

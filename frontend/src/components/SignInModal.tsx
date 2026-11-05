@@ -43,22 +43,22 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose }) => 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-[2px]">
-      <div className="bg-white border border-slate-300 rounded-lg shadow-lg w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+      <div className="bg-white dark:bg-[#0F172A] border border-slate-300 dark:border-slate-800 rounded-lg shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Modal Header */}
-        <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-[#0B132B]">
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-700">
-              <Lock className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300">
+              <Lock className="w-4 h-4 text-slate-700 dark:text-blue-400" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-slate-900">Sign In to AssistFlow AI</h3>
-              <p className="text-xs text-slate-500">Executive Autonomous Assistant Portal</p>
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Sign In to AssistFlow AI</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Executive Autonomous Assistant Portal</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 p-1 rounded-md hover:bg-slate-200"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-md hover:bg-slate-200 dark:hover:bg-slate-800"
           >
             <X className="w-4 h-4" />
           </button>
@@ -67,14 +67,14 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose }) => 
         {/* Modal Body */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {errorMessage && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-md text-xs text-red-700 flex items-start space-x-2">
+            <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 rounded-md text-xs text-red-700 dark:text-red-300 flex items-start space-x-2">
               <AlertCircle className="w-4 h-4 shrink-0 text-red-500 mt-0.5" />
               <span>{errorMessage}</span>
             </div>
           )}
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-700 flex items-center justify-between">
+            <label className="text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center justify-between">
               <span>Account Email</span>
               <span className="text-[11px] text-slate-400 font-normal">Default: {DEFAULT_EMAIL}</span>
             </label>
@@ -92,7 +92,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose }) => 
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-700 flex items-center justify-between">
+            <label className="text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center justify-between">
               <span>Password</span>
               <span className="text-[11px] text-slate-400 font-normal">Default: password123</span>
             </label>
@@ -110,14 +110,14 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose }) => 
           </div>
 
           {/* Quick-fill helper banner */}
-          <div className="p-2.5 bg-slate-50 border border-slate-200 rounded text-xs text-slate-600 flex items-center justify-between">
+          <div className="p-2.5 bg-slate-50 dark:bg-[#080E1E] border border-slate-200 dark:border-slate-800 rounded text-xs text-slate-600 dark:text-slate-400 flex items-center justify-between">
             <div className="text-[11px]">
-              <span className="font-semibold text-slate-700">Single-User Mode:</span> configured for Ermias Teklemarkos
+              <span className="font-semibold text-slate-700 dark:text-slate-300">Single-User Mode:</span> configured for Ermias Teklemarkos
             </div>
             <button
               type="button"
               onClick={handleFillDefault}
-              className="text-[11px] font-medium text-slate-900 underline hover:text-slate-700 ml-2"
+              className="text-[11px] font-medium text-slate-900 underline hover:text-slate-700 dark:text-blue-400 dark:hover:text-blue-300 ml-2"
             >
               Fill Default
             </button>

@@ -54,7 +54,7 @@ export const ReminderCreateIntentSchema = z.object({
   intent: z.literal("reminder_create"),
   params: z.object({
     title: z.string().min(1, "Reminder title is required"),
-    scheduledAt: z.string().datetime({ message: "scheduledAt must be an ISO 8601 datetime" }),
+    scheduledAt: z.string().datetime({ message: "scheduledAt must be an ISO 8601 datetime" }).optional(),
     description: z.string().optional(),
   }),
 });
@@ -96,8 +96,8 @@ export const CalendarCreateIntentSchema = z.object({
   intent: z.literal("calendar_create"),
   params: z.object({
     summary: z.string().min(1, "Event summary is required"),
-    startAt: z.string().datetime(),
-    endAt: z.string().datetime(),
+    startAt: z.string().datetime().optional(),
+    endAt: z.string().datetime().optional(),
     description: z.string().optional(),
     location: z.string().optional(),
     attendees: z.array(z.string().email()).optional(),
@@ -133,7 +133,11 @@ export const OverviewQueryIntentSchema = z.object({
     includeTasks: z.boolean().default(true),
     includeCalendar: z.boolean().default(true),
     includeReminders: z.boolean().default(true),
-  }).default({}),
+  }).default({
+    includeTasks: true,
+    includeCalendar: true,
+    includeReminders: true,
+  }),
 });
 
 export const DailyBriefingRequestIntentSchema = z.object({
@@ -147,6 +151,7 @@ export const ConfirmationReplyIntentSchema = z.object({
   intent: z.literal("confirmation_reply"),
   params: z.object({
     confirmed: z.boolean(),
+    actionId: z.string().uuid().optional(),
     rawReply: z.string().default(""),
   }),
 });
