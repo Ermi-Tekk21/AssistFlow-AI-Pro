@@ -4,6 +4,7 @@ import { app } from "./app";
 import { AppDataSource } from "./config/database";
 import { authService } from "./modules/auth/auth.service";
 import { remindersDeliveryService } from "./modules/reminders/remindersDelivery.service";
+import { briefingService } from "./modules/briefing/briefing.service";
 
 const PORT = Number(process.env.PORT ?? 3000);
 
@@ -12,6 +13,11 @@ async function startServer(): Promise<void> {
     await AppDataSource.initialize();
 
     console.log("PostgreSQL connection established.");
+
+    // Run database migrations on startup
+    console.log("Running pending database migrations...");
+    await AppDataSource.runMigrations();
+    console.log("Database migrations applied.");
 
     // Seed or synchronize default administrator account
     await authService.seedDefaultUser();
@@ -32,6 +38,19 @@ async function startServer(): Promise<void> {
         console.error("[RemindersWorker] Failed checking due reminders:", err.message);
       }
     }, REMINDER_POLL_INTERVAL_MS);
+
+    // Background worker: automatically dispatch scheduled daily briefings to Telegram every 30 seconds
+    const BRIEFING_POLL_INTERVAL_MS = 30000;
+    setInterval(async () => {
+      try {
+        const result = await briefingService.dispatchScheduledBriefings();
+        if (result.sent > 0) {
+          console.log(`[BriefingWorker] Dispatched ${result.sent} daily briefing(s) to Telegram.`);
+        }
+      } catch (err: any) {
+        console.error("[BriefingWorker] Failed checking daily briefings:", err.message);
+      }
+    }, BRIEFING_POLL_INTERVAL_MS);
   } catch (error) {
     console.error("Failed to start AssistFlow API:", error);
     process.exit(1);

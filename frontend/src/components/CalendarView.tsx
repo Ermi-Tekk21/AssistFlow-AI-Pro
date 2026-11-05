@@ -87,13 +87,15 @@ export const CalendarView: React.FC = () => {
     setIsAdding(false);
   };
 
-  const handleCopyMeetUrl = (eventId: string, meetUrl: string) => {
-    navigator.clipboard.writeText(meetUrl);
-    setCopiedId(eventId);
-    showToast("Google Meet link copied to clipboard! Ready to share.", "success");
-    setTimeout(() => {
-      setCopiedId((curr) => (curr === eventId ? null : curr));
-    }, 2500);
+  const handleCopyMeetUrl = async (eventId: string, url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedId(eventId);
+      showToast("Google Meet link copied to clipboard!", "success");
+      setTimeout(() => setCopiedId(null), 3000);
+    } catch {
+      showToast("Failed to copy link", "error");
+    }
   };
 
   return (
@@ -101,8 +103,8 @@ export const CalendarView: React.FC = () => {
       {/* Top Header & Actions Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-slate-900">Google Calendar Agenda</h2>
-          <p className="text-xs text-slate-500">
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Google Calendar Agenda</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Meetings synchronized with Google Calendar. Google Meet links and 10-minute reminders are provisioned automatically.
           </p>
         </div>
@@ -119,14 +121,14 @@ export const CalendarView: React.FC = () => {
 
       {/* Google Calendar Connection Status Banner */}
       <div
-        className={`p-3 rounded-lg border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 text-xs ${
+        className={`p-3 rounded-lg border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 text-xs transition-colors ${
           googleConnected
-            ? "bg-emerald-50 border-emerald-200 text-emerald-900"
-            : "bg-amber-50 border-amber-200 text-amber-900"
+            ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/60 text-emerald-900 dark:text-emerald-200"
+            : "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200"
         }`}
       >
         <div className="flex items-center space-x-2">
-          <Calendar className="w-4 h-4 shrink-0 text-slate-700" />
+          <Calendar className="w-4 h-4 shrink-0 text-slate-700 dark:text-slate-300" />
           <div>
             <span className="font-semibold">
               {googleConnected ? "Google Calendar Synchronized" : "Google Calendar Not Connected"}
@@ -143,7 +145,7 @@ export const CalendarView: React.FC = () => {
           <Button
             size="sm"
             onClick={connectGoogleCalendar}
-            className="shrink-0 text-xs bg-slate-900 hover:bg-slate-800 text-white"
+            className="shrink-0 text-xs bg-slate-900 hover:bg-slate-800 text-white dark:bg-blue-600 dark:hover:bg-blue-500"
           >
             <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
             Connect Google Calendar
@@ -153,8 +155,8 @@ export const CalendarView: React.FC = () => {
 
       {/* New Meeting Inline Form */}
       {isAdding && (
-        <Card className="border-slate-300 shadow-sm bg-white">
-          <CardHeader className="py-3 border-b border-slate-100">
+        <Card className="border-slate-300 dark:border-slate-700 shadow-sm bg-white dark:bg-[#0F172A]">
+          <CardHeader className="py-3 border-b border-slate-100 dark:border-slate-800">
             <CardTitle className="text-xs font-semibold">Schedule New Meeting</CardTitle>
           </CardHeader>
           <CardContent className="pt-3">
@@ -172,23 +174,23 @@ export const CalendarView: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex items-center space-x-2">
-                  <span className="text-xs text-slate-500 w-16 shrink-0">Starts:</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 w-16 shrink-0">Starts:</span>
                   <input
                     type="datetime-local"
                     value={startAt}
                     onChange={(e) => setStartAt(e.target.value)}
-                    className="text-xs px-2.5 py-1.5 rounded border border-slate-200 bg-white w-full"
+                    className="text-xs px-2.5 py-1.5 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B132B] text-slate-900 dark:text-slate-100 w-full"
                     required
                   />
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <span className="text-xs text-slate-500 w-16 shrink-0">Ends:</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 w-16 shrink-0">Ends:</span>
                   <input
                     type="datetime-local"
                     value={endAt}
                     onChange={(e) => setEndAt(e.target.value)}
-                    className="text-xs px-2.5 py-1.5 rounded border border-slate-200 bg-white w-full"
+                    className="text-xs px-2.5 py-1.5 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B132B] text-slate-900 dark:text-slate-100 w-full"
                     required
                   />
                 </div>
@@ -196,10 +198,10 @@ export const CalendarView: React.FC = () => {
 
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-slate-700">
+                  <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
                     Attendees <span className="text-red-500">* (at least one email required)</span>
                   </span>
-                  <span className="text-[11px] text-slate-400">Comma-separated</span>
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500">Comma-separated</span>
                 </div>
                 <Input
                   placeholder="colleague@example.com, partner@company.com..."
@@ -243,17 +245,17 @@ export const CalendarView: React.FC = () => {
 
       {/* Calendar List */}
       {calendarLoading ? (
-        <div className="py-12 text-center text-xs text-slate-500 flex items-center justify-center space-x-2">
-          <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+        <div className="py-12 text-center text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center space-x-2">
+          <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
           <span>Loading calendar events...</span>
         </div>
       ) : (calendarEvents || []).length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-lg p-12 text-center">
-          <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2 text-slate-600">
+        <div className="bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-lg p-12 text-center">
+          <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-2 text-slate-600 dark:text-slate-300">
             <Calendar className="w-5 h-5" />
           </div>
-          <p className="text-sm font-medium text-slate-800">No upcoming meetings</p>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">No upcoming meetings</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Click "Add Meeting" above or say "Schedule meeting tomorrow with alex@example.com from 3pm to 4pm" in chat!
           </p>
         </div>
@@ -266,10 +268,10 @@ export const CalendarView: React.FC = () => {
             return (
               <div
                 key={event.id}
-                className={`bg-white border rounded-lg p-4 shadow-sm transition-colors ${
+                className={`border rounded-lg p-4 shadow-sm transition-colors ${
                   isCancelled
-                    ? "border-slate-200 bg-slate-50/70 opacity-70"
-                    : "border-slate-200 hover:border-slate-300"
+                    ? "border-slate-200 dark:border-slate-800/80 bg-slate-50/70 dark:bg-[#080E1E]/70 opacity-70"
+                    : "bg-white dark:bg-[#0F172A] border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
                 }`}
               >
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
@@ -277,7 +279,7 @@ export const CalendarView: React.FC = () => {
                     <div className="flex items-center space-x-2">
                       <h3
                         className={`text-sm font-semibold ${
-                          isCancelled ? "line-through text-slate-400" : "text-slate-900"
+                          isCancelled ? "line-through text-slate-400 dark:text-slate-500" : "text-slate-900 dark:text-white"
                         }`}
                       >
                         {event.title}
@@ -290,26 +292,26 @@ export const CalendarView: React.FC = () => {
                     </div>
 
                     {event.description && (
-                      <p className="text-xs text-slate-600">{event.description}</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-300">{event.description}</p>
                     )}
 
                     {/* Timing */}
-                    <div className="flex items-center space-x-2 text-xs font-mono text-slate-500 pt-0.5">
-                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                    <div className="flex items-center space-x-2 text-xs font-mono text-slate-500 dark:text-slate-400 pt-0.5">
+                      <Clock className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                       <span>{formatDateTime(event.startAt)}</span>
                       <span>—</span>
                       <span>{formatDateTime(event.endAt)}</span>
-                      <span className="text-[11px] text-slate-400">({event.timezone})</span>
+                      <span className="text-[11px] text-slate-400 dark:text-slate-500">({event.timezone})</span>
                     </div>
 
                     {/* Attendees */}
                     {event.attendees && event.attendees.length > 0 && (
                       <div className="flex items-center space-x-1.5 pt-1.5 flex-wrap gap-1">
-                        <Users className="w-3.5 h-3.5 text-slate-400 mr-1" />
+                        <Users className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 mr-1" />
                         {event.attendees.map((attendee) => (
                           <span
                             key={attendee.id}
-                            className="text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200 font-mono"
+                            className="text-[11px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 font-mono"
                           >
                             {attendee.email}
                           </span>
@@ -320,25 +322,25 @@ export const CalendarView: React.FC = () => {
                     {/* Prominent Google Meet URL display for sharing */}
                     {event.meetUrl && !isCancelled && (
                       <div className="pt-2 flex items-center space-x-2">
-                        <div className="flex items-center space-x-1 text-[11px] font-mono text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200 truncate max-w-sm sm:max-w-md">
-                          <Video className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
+                        <div className="flex items-center space-x-1 text-[11px] font-mono text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded border border-emerald-200 dark:border-emerald-800/60 truncate max-w-sm sm:max-w-md">
+                          <Video className="w-3.5 h-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
                           <span className="truncate">{event.meetUrl}</span>
                         </div>
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-7 px-2 text-xs text-slate-700 hover:text-slate-900"
+                          className="h-7 px-2 text-xs text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                           onClick={() => handleCopyMeetUrl(event.id, event.meetUrl!)}
                           title="Copy link to share with attendees"
                         >
                           {isCopied ? (
                             <>
-                              <Check className="w-3.5 h-3.5 text-emerald-600 mr-1" />
-                              <span className="text-emerald-700">Copied</span>
+                              <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 mr-1" />
+                              <span className="text-emerald-700 dark:text-emerald-300">Copied</span>
                             </>
                           ) : (
                             <>
-                              <Copy className="w-3.5 h-3.5 mr-1 text-slate-500" />
+                              <Copy className="w-3.5 h-3.5 mr-1 text-slate-500 dark:text-slate-400" />
                               <span>Copy Link</span>
                             </>
                           )}
@@ -353,7 +355,7 @@ export const CalendarView: React.FC = () => {
                       <Button
                         size="sm"
                         variant="default"
-                        className="bg-emerald-700 hover:bg-emerald-800 text-white"
+                        className="bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-600 dark:hover:bg-emerald-500"
                         onClick={() => window.open(event.meetUrl!, "_blank")}
                       >
                         <Video className="w-3.5 h-3.5 mr-1.5" />
@@ -364,7 +366,7 @@ export const CalendarView: React.FC = () => {
                     {!isCancelled && (
                       <button
                         onClick={() => cancelCalendarEvent(event.id)}
-                        className="text-slate-400 hover:text-amber-600 transition-colors p-1.5 rounded hover:bg-slate-100"
+                        className="text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800"
                         title="Cancel meeting"
                       >
                         <XCircle className="w-4 h-4" />
@@ -381,7 +383,7 @@ export const CalendarView: React.FC = () => {
                           deleteCalendarEventPermanently(event.id);
                         }
                       }}
-                      className="text-slate-400 hover:text-red-600 transition-colors p-1.5 rounded hover:bg-slate-100"
+                      className="text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800"
                       title="Delete totally"
                     >
                       <Trash2 className="w-4 h-4" />

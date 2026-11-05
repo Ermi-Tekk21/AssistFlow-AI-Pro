@@ -83,55 +83,57 @@ export class ConfirmationsService {
     userId: string,
     actionId: string
   ): Promise<{ action: PendingAction; result: any }> {
-    return await AppDataSource.transaction(async (txManager) => {
+    // 1. Atomically lock and transition from PENDING to CONFIRMED
+    const action = await AppDataSource.transaction(async (txManager) => {
       const repo = txManager.getRepository(PendingAction);
 
-      const action = await repo.findOne({
+      const target = await repo.findOne({
         where: { id: actionId, userId },
         lock: { mode: "pessimistic_write" },
       });
 
-      if (!action) {
+      if (!target) {
         throw new NotFoundError("Pending action not found");
       }
 
-      if (action.status !== PendingActionStatus.PENDING) {
+      if (target.status !== PendingActionStatus.PENDING) {
         throw new BadRequestError(
-          `Pending action has already been ${action.status}`
+          `Pending action has already been ${target.status}`
         );
       }
 
-      if (new Date() >= action.expiresAt) {
-        action.status = PendingActionStatus.EXPIRED;
-        await repo.save(action);
+      if (new Date() >= target.expiresAt) {
+        target.status = PendingActionStatus.EXPIRED;
+        await repo.save(target);
         throw new BadRequestError("Pending action has expired and cannot be confirmed");
       }
 
       // Mark as confirmed
-      action.status = PendingActionStatus.CONFIRMED;
-      action.confirmedAt = new Date();
-      await repo.save(action);
-
-      // Execute stored payload
-      try {
-        const executionResult = await this.executeAction(
-          action.actionType,
-          userId,
-          action.payload
-        );
-        action.status = PendingActionStatus.EXECUTED;
-        action.executedAt = new Date();
-        action.executionResult = executionResult;
-        await repo.save(action);
-
-        return { action, result: executionResult };
-      } catch (error: any) {
-        action.status = PendingActionStatus.FAILED;
-        action.executionResult = { error: error.message ?? "Execution failed" };
-        await repo.save(action);
-        throw error;
-      }
+      target.status = PendingActionStatus.CONFIRMED;
+      target.confirmedAt = new Date();
+      return await repo.save(target);
     });
+
+    // 2. Execute stored payload outside the transaction so locks are not held
+    try {
+      const executionResult = await this.executeAction(
+        action.actionType,
+        userId,
+        action.payload,
+        action.targetEntityId
+      );
+      action.status = PendingActionStatus.EXECUTED;
+      action.executedAt = new Date();
+      action.executionResult = executionResult;
+      await this.actionRepo.save(action);
+
+      return { action, result: executionResult };
+    } catch (error: any) {
+      action.status = PendingActionStatus.FAILED;
+      action.executionResult = { error: error.message ?? "Execution failed" };
+      await this.actionRepo.save(action);
+      throw error;
+    }
   }
 
   async rejectAction(userId: string, actionId: string): Promise<PendingAction> {
@@ -170,7 +172,7 @@ export class ConfirmationsService {
   ): Promise<{ action: PendingAction; result?: any; decision: "confirmed" | "rejected" }> {
     const rawReply = input.reply.toLowerCase().trim();
 
-    const isPositive = ["y", "yes", "confirm", "proceed", "true", "ok"].includes(rawReply);
+    const isPositive = ["y", "yes", "yse", "ye", "ys", "yess", "confirm", "proceed", "true", "ok"].includes(rawReply);
     const isNegative = ["n", "no", "reject", "cancel", "false"].includes(rawReply);
 
     if (!isPositive && !isNegative) {
@@ -220,41 +222,93 @@ export class ConfirmationsService {
   private async executeAction(
     actionType: PendingActionType,
     userId: string,
-    payload: Record<string, any>
+    payload: Record<string, any>,
+    targetEntityId?: string | null
   ): Promise<any> {
+    // Helper to reliably resolve target entity ID from payload or targetEntityId
+    const resolveId = (...candidates: Array<any>): string => {
+      for (const c of candidates) {
+        if (c && typeof c === "string" && c.trim().length > 0) {
+          return c.trim();
+        }
+      }
+      throw new BadRequestError(`Cannot execute ${actionType}: missing target entity ID`);
+    };
+
+    // Helper to extract clean update input (stripping identifier fields)
+    const extractUpdateInput = (raw: Record<string, any>): Record<string, any> => {
+      const input = raw.input && typeof raw.input === "object" ? { ...raw.input } : { ...raw };
+      delete input.id;
+      delete input.taskId;
+      delete input.reminderId;
+      delete input.calendarEventId;
+      delete input.eventId;
+      delete input.targetEntityId;
+      return input;
+    };
+
     switch (actionType) {
       case PendingActionType.TASK_CREATE:
         return await tasksService.createTask(userId, payload as any);
 
-      case PendingActionType.TASK_UPDATE:
-        return await tasksService.updateTask(userId, payload.id, payload.input);
+      case PendingActionType.TASK_UPDATE: {
+        const taskId = resolveId(payload.id, payload.taskId, targetEntityId);
+        const updateInput = extractUpdateInput(payload);
+        return await tasksService.updateTask(userId, taskId, updateInput);
+      }
 
-      case PendingActionType.TASK_COMPLETE:
-        return await tasksService.completeTask(userId, payload.id);
+      case PendingActionType.TASK_COMPLETE: {
+        const taskId = resolveId(payload.id, payload.taskId, targetEntityId);
+        return await tasksService.completeTask(userId, taskId);
+      }
 
-      case PendingActionType.TASK_DELETE:
-        return await tasksService.deleteTask(userId, payload.id);
+      case PendingActionType.TASK_DELETE: {
+        const taskId = resolveId(payload.id, payload.taskId, targetEntityId);
+        return await tasksService.deleteTask(userId, taskId);
+      }
 
       case PendingActionType.REMINDER_CREATE:
         return await remindersService.createReminder(userId, payload as any);
 
-      case PendingActionType.REMINDER_UPDATE:
-        return await remindersService.updateReminder(userId, payload.id, payload.input);
+      case PendingActionType.REMINDER_UPDATE: {
+        const reminderId = resolveId(payload.id, payload.reminderId, targetEntityId);
+        const updateInput = extractUpdateInput(payload);
+        return await remindersService.updateReminder(userId, reminderId, updateInput);
+      }
 
-      case PendingActionType.REMINDER_SNOOZE:
-        return await remindersService.snoozeReminder(userId, payload.id, payload.input);
+      case PendingActionType.REMINDER_SNOOZE: {
+        const reminderId = resolveId(payload.id, payload.reminderId, targetEntityId);
+        const snoozeMinutes =
+          payload.input?.snoozeMinutes ??
+          payload.snoozeMinutes ??
+          payload.input?.minutes ??
+          payload.minutes ??
+          15;
+        const scheduledAt = payload.input?.scheduledAt ?? payload.scheduledAt;
+        return await remindersService.snoozeReminder(userId, reminderId, {
+          snoozeMinutes,
+          scheduledAt,
+        });
+      }
 
-      case PendingActionType.REMINDER_CANCEL:
-        return await remindersService.cancelReminder(userId, payload.id);
+      case PendingActionType.REMINDER_CANCEL: {
+        const reminderId = resolveId(payload.id, payload.reminderId, targetEntityId);
+        return await remindersService.cancelReminder(userId, reminderId);
+      }
 
       case PendingActionType.CALENDAR_EVENT_CREATE:
         return await calendarService.createEvent(userId, payload as any);
 
-      case PendingActionType.CALENDAR_EVENT_UPDATE:
-        return await calendarService.updateEvent(userId, payload.id, payload.input);
+      case PendingActionType.CALENDAR_EVENT_UPDATE: {
+        const eventId = resolveId(payload.id, payload.calendarEventId, payload.eventId, targetEntityId);
+        const updateInput = extractUpdateInput(payload);
+        return await calendarService.updateEvent(userId, eventId, updateInput);
+      }
 
-      case PendingActionType.CALENDAR_EVENT_CANCEL:
-        return await calendarService.cancelEvent(userId, payload.id);
+      case PendingActionType.CALENDAR_EVENT_CANCEL: {
+        const eventId = resolveId(payload.id, payload.calendarEventId, payload.eventId, targetEntityId);
+        return await calendarService.cancelEvent(userId, eventId);
+      }
 
       default:
         throw new BadRequestError(`Unsupported action type execution: ${actionType}`);

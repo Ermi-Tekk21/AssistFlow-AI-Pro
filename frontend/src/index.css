@@ -3,8 +3,36 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    color-scheme: light;
+  }
+  
+  html.dark {
+    color-scheme: dark;
+  }
+
   body {
-    @apply bg-slate-50 text-slate-900;
+    @apply bg-slate-50 text-slate-900 transition-colors duration-150;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+
+  html.dark body {
+    @apply bg-[#080E1E] text-slate-100;
+  }
+}
+
+/* Custom scrollbars for Dark Blue theme */
+html.dark ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+html.dark ::-webkit-scrollbar-track {
+  background: #080E1E;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: #1E293B;
+  border-radius: 9999px;
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #334155;
 }

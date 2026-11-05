@@ -15,10 +15,11 @@ import {
   Loader2,
   CheckCircle2,
   ShieldCheck,
+  Send,
 } from "lucide-react";
 
 export const ProfileView: React.FC = () => {
-  const { user, fetchMe, updateProfile, logout, authLoading } = useStore();
+  const { user, fetchMe, updateProfile, sendBriefingNow, logout, authLoading } = useStore();
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -26,6 +27,21 @@ export const ProfileView: React.FC = () => {
   const [dailyBriefingEnabled, setDailyBriefingEnabled] = useState(false);
   const [timezone, setTimezone] = useState("Africa/Addis_Ababa");
   const [isSaved, setIsSaved] = useState(false);
+  const [testSending, setTestSending] = useState(false);
+  const [testSentSuccess, setTestSentSuccess] = useState(false);
+
+  const handleTestSendBriefing = async () => {
+    try {
+      setTestSending(true);
+      await sendBriefingNow();
+      setTestSentSuccess(true);
+      setTimeout(() => setTestSentSuccess(false), 4000);
+    } catch (err) {
+      console.error("Test send briefing failed:", err);
+    } finally {
+      setTestSending(false);
+    }
+  };
 
   useEffect(() => {
     if (!user) {
@@ -60,8 +76,8 @@ export const ProfileView: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-slate-900">Administrator Profile</h2>
-          <p className="text-xs text-slate-500">
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Administrator Profile</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Manage your personal details, immutable identity, and daily executive briefing settings.
           </p>
         </div>
@@ -70,7 +86,7 @@ export const ProfileView: React.FC = () => {
           variant="outline"
           size="sm"
           onClick={logout}
-          className="text-xs text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+          className="text-xs text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/60 hover:bg-red-50 dark:hover:bg-red-950/40"
         >
           <LogOut className="w-3.5 h-3.5 mr-1.5" />
           Sign Out
@@ -78,17 +94,14 @@ export const ProfileView: React.FC = () => {
       </div>
 
       {/* Profile Form Card */}
-      <Card className="border-slate-300 shadow-sm bg-white">
-        <CardHeader className="py-3.5 border-b border-slate-100 flex flex-row items-center justify-between">
+      <Card className="border-slate-300 dark:border-slate-800 shadow-sm bg-white dark:bg-[#0F172A]">
+        <CardHeader className="py-3.5 border-b border-slate-100 dark:border-slate-800 flex flex-row items-center justify-between">
           <div className="flex items-center space-x-2">
-            <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">
+            <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300">
               <User className="w-3.5 h-3.5" />
             </div>
             <CardTitle className="text-xs font-semibold">User Details & Briefing Preferences</CardTitle>
           </div>
-          {/* <Badge variant="secondary" className="font-mono text-[11px]">
-            Single JWT Access
-          </Badge> */}
         </CardHeader>
 
         <CardContent className="pt-4">
@@ -96,11 +109,11 @@ export const ProfileView: React.FC = () => {
             {/* Immutable Email */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-slate-700 flex items-center space-x-1.5">
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
                   <Mail className="w-3.5 h-3.5 text-slate-400" />
                   <span>Email Address</span>
                 </label>
-                <span className="inline-flex items-center text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-medium border border-slate-200">
+                <span className="inline-flex items-center text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded font-medium border border-slate-200 dark:border-slate-700">
                   <Lock className="w-2.5 h-2.5 mr-1 text-slate-400" />
                   Immutable
                 </span>
@@ -109,9 +122,9 @@ export const ProfileView: React.FC = () => {
                 type="email"
                 value={user?.email || (import.meta.env.VITE_DEFAULT_USER_EMAIL || "ermiasteklemarkos@gmail.com")}
                 disabled
-                className="bg-slate-50 text-slate-500 font-mono text-xs cursor-not-allowed border-slate-200"
+                className="bg-slate-50 dark:bg-[#080E1E] text-slate-500 dark:text-slate-400 font-mono text-xs cursor-not-allowed border-slate-200 dark:border-slate-800"
               />
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-400 dark:text-slate-500">
                 The account email address is permanently bound to this user record and cannot be edited.
               </p>
             </div>
@@ -119,7 +132,7 @@ export const ProfileView: React.FC = () => {
             {/* First Name & Last Name */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-700">First Name</label>
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300">First Name</label>
                 <Input
                   type="text"
                   required
@@ -131,7 +144,7 @@ export const ProfileView: React.FC = () => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-700">Last Name</label>
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300">Last Name</label>
                 <Input
                   type="text"
                   required
@@ -145,7 +158,7 @@ export const ProfileView: React.FC = () => {
 
             {/* Timezone */}
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-700 flex items-center space-x-1.5">
+              <label className="text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
                 <Globe className="w-3.5 h-3.5 text-slate-400" />
                 <span>Timezone</span>
               </label>
@@ -157,20 +170,20 @@ export const ProfileView: React.FC = () => {
                 placeholder="Africa/Addis_Ababa"
                 className="text-xs font-mono"
               />
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-400 dark:text-slate-500">
                 Used for calculating relative times ("tomorrow 3pm") and morning briefing dispatch.
               </p>
             </div>
 
             {/* Daily Briefing Settings */}
-            <div className="pt-2 border-t border-slate-100 space-y-3">
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-xs font-medium text-slate-800 flex items-center space-x-1.5">
-                    <Bell className="w-3.5 h-3.5 text-slate-500" />
+                  <div className="text-xs font-medium text-slate-800 dark:text-slate-200 flex items-center space-x-1.5">
+                    <Bell className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                     <span>Daily Morning Briefing</span>
                   </div>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
                     Receive automated summary of tasks and agenda via Telegram.
                   </p>
                 </div>
@@ -181,13 +194,13 @@ export const ProfileView: React.FC = () => {
                     onChange={(e) => setDailyBriefingEnabled(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-900"></div>
+                  <div className="w-9 h-5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-900 dark:peer-checked:bg-blue-600"></div>
                 </label>
               </div>
 
               {dailyBriefingEnabled && (
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-md space-y-1.5">
-                  <label className="text-xs font-medium text-slate-700 flex items-center space-x-1.5">
+                <div className="p-3 bg-slate-50 dark:bg-[#080E1E] border border-slate-200 dark:border-slate-800 rounded-md space-y-1.5">
+                  <label className="text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
                     <Clock className="w-3.5 h-3.5 text-slate-400" />
                     <span>Briefing Scheduled Time</span>
                   </label>
@@ -195,19 +208,50 @@ export const ProfileView: React.FC = () => {
                     type="time"
                     value={dailyBriefingTime}
                     onChange={(e) => setDailyBriefingTime(e.target.value)}
-                    className="text-xs px-2.5 py-1.5 rounded border border-slate-200 bg-white font-mono"
+                    className="text-xs px-2.5 py-1.5 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0B132B] text-slate-900 dark:text-slate-100 font-mono"
                     required
                   />
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
                     Dispatched daily at this time in your local timezone ({timezone}).
                   </p>
+
+                  <div className="pt-2 mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-t border-slate-200/70 dark:border-slate-800">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Want to verify Telegram delivery right now?
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={testSending}
+                      onClick={handleTestSendBriefing}
+                      className="text-xs border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0"
+                    >
+                      {testSending ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin text-blue-500" />
+                          <span>Dispatching...</span>
+                        </>
+                      ) : testSentSuccess ? (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5 mr-1.5 text-emerald-600 dark:text-emerald-400" />
+                          <span className="text-emerald-700 dark:text-emerald-300 font-medium">Sent to Telegram!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-3.5 h-3.5 mr-1.5 text-slate-500 dark:text-slate-400" />
+                          <span>Send Briefing to Telegram Now</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
 
             {/* Action Buttons */}
-            <div className="pt-3 flex items-center justify-between border-t border-slate-100">
-              <div className="text-xs text-emerald-600 font-medium flex items-center space-x-1">
+            <div className="pt-3 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
+              <div className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center space-x-1">
                 {isSaved && (
                   <>
                     <CheckCircle2 className="w-3.5 h-3.5" />
@@ -235,30 +279,30 @@ export const ProfileView: React.FC = () => {
       </Card>
 
       {/* Account Security & Connected Integrations Card */}
-      <Card className="border-slate-200 bg-slate-50/50">
+      <Card className="border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-[#0F172A]">
         <CardContent className="p-4 space-y-3">
-          <div className="flex items-center space-x-2 text-xs font-semibold text-slate-800">
-            <ShieldCheck className="w-4 h-4 text-slate-600" />
+          <div className="flex items-center space-x-2 text-xs font-semibold text-slate-800 dark:text-white">
+            <ShieldCheck className="w-4 h-4 text-slate-600 dark:text-slate-400" />
             <span>Security & Integration Status</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-            <div className="bg-white p-2.5 rounded border border-slate-200 space-y-0.5">
+            <div className="bg-white dark:bg-[#080E1E] p-2.5 rounded border border-slate-200 dark:border-slate-800 space-y-0.5">
               <div className="text-[10px] text-slate-400 uppercase font-mono">Authentication</div>
-              <div className="font-medium text-slate-700">JWT Access Token</div>
-              <div className="text-[10px] text-slate-500">Stateless 7-Day Session</div>
+              <div className="font-medium text-slate-700 dark:text-slate-300">JWT Access Token</div>
+              <div className="text-[10px] text-slate-500 dark:text-slate-400">Stateless 7-Day Session</div>
             </div>
 
-            <div className="bg-white p-2.5 rounded border border-slate-200 space-y-0.5">
+            <div className="bg-white dark:bg-[#080E1E] p-2.5 rounded border border-slate-200 dark:border-slate-800 space-y-0.5">
               <div className="text-[10px] text-slate-400 uppercase font-mono">Google Calendar</div>
-              <div className="font-medium text-emerald-700">Active OAuth Sync</div>
-              <div className="text-[10px] text-slate-500">Meet Video Rooms</div>
+              <div className="font-medium text-emerald-700 dark:text-emerald-400">Active OAuth Sync</div>
+              <div className="text-[10px] text-slate-500 dark:text-slate-400">Meet Video Rooms</div>
             </div>
 
-            <div className="bg-white p-2.5 rounded border border-slate-200 space-y-0.5">
+            <div className="bg-white dark:bg-[#080E1E] p-2.5 rounded border border-slate-200 dark:border-slate-800 space-y-0.5">
               <div className="text-[10px] text-slate-400 uppercase font-mono">Telegram Delivery</div>
-              <div className="font-medium text-emerald-700">Bot Connected</div>
-              <div className="text-[10px] text-slate-500">Direct Push Alerts</div>
+              <div className="font-medium text-emerald-700 dark:text-emerald-400">Bot Connected</div>
+              <div className="text-[10px] text-slate-500 dark:text-slate-400">Direct Push Alerts</div>
             </div>
           </div>
         </CardContent>
