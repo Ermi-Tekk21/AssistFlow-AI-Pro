@@ -26,7 +26,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get("/health", (_req, res) => {
+app.get(["/health", "/api/healthcheck"], (_req, res) => {
   res.status(200).json({
     status: "ok",
     service: "AssistFlow AI",
