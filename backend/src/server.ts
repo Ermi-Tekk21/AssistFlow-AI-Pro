@@ -30,12 +30,19 @@ async function startServer(): Promise<void> {
     const REMINDER_POLL_INTERVAL_MS = 10000;
     setInterval(async () => {
       try {
-        const result = await remindersDeliveryService.processDueReminders({ limit: 25 });
+        const result = await remindersDeliveryService.processDueReminders({
+          limit: 25,
+        });
         if (result.sentCount > 0) {
-          console.log(`[RemindersWorker] Dispatched ${result.sentCount} reminder(s) to Telegram.`);
+          console.log(
+            `[RemindersWorker] Dispatched ${result.sentCount} reminder(s) to Telegram.`,
+          );
         }
       } catch (err: any) {
-        console.error("[RemindersWorker] Failed checking due reminders:", err.message);
+        console.error(
+          "[RemindersWorker] Failed checking due reminders:",
+          err.message,
+        );
       }
     }, REMINDER_POLL_INTERVAL_MS);
 
@@ -45,14 +52,38 @@ async function startServer(): Promise<void> {
       try {
         const result = await briefingService.dispatchScheduledBriefings();
         if (result.sent > 0) {
-          console.log(`[BriefingWorker] Dispatched ${result.sent} daily briefing(s) to Telegram.`);
+          console.log(
+            `[BriefingWorker] Dispatched ${result.sent} daily briefing(s) to Telegram.`,
+          );
         }
       } catch (err: any) {
-        console.error("[BriefingWorker] Failed checking daily briefings:", err.message);
+        console.error(
+          "[BriefingWorker] Failed checking daily briefings:",
+          err.message,
+        );
       }
     }, BRIEFING_POLL_INTERVAL_MS);
-  } catch (error) {
-    console.error("Failed to start AssistFlow API:", error);
+
+    const HEALTHCHECK_URL = process.env.HEALTHCHECK_URL;
+    const HEALTHCHECK_INTERVAL_MS =
+      Number(process.env.HEALTHCHECK_INTERVAL_MS) || 895000;
+
+    if (HEALTHCHECK_URL) {
+      setInterval(async () => {
+        try {
+          const response = await fetch(HEALTHCHECK_URL);
+
+          console.log(
+            `Health check status: ${response.status}`,
+            new Date().toISOString(),
+          );
+        } catch (error: any) {
+          console.error("Health check failed:", error.message);
+        }
+      }, HEALTHCHECK_INTERVAL_MS);
+    }
+  } catch (error: any) {
+    console.error("Failed to start AssistFlow API:", error.message);
     process.exit(1);
   }
 }
