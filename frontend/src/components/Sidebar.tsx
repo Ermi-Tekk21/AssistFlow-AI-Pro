@@ -13,7 +13,6 @@ import {
   LogOut,
   Menu,
   X,
-  Smartphone,
 } from "lucide-react";
 import { Badge } from "./ui/Badge";
 
@@ -253,22 +252,6 @@ export const Sidebar: React.FC = () => {
 
         {/* Bottom: Theme Switcher, User Card & Sign Out */}
         <div className="p-3 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-[#080E1E]/50 space-y-2.5">
-          {/* Download Android APK Button */}
-          <a
-            href="/downloads/AssistFlow-AI.apk"
-            download="AssistFlow-AI.apk"
-            className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 transition-colors group"
-            title="Download AssistFlow Android APK"
-          >
-            <div className="flex items-center space-x-2.5">
-              <Smartphone className="w-4 h-4 text-emerald-500 shrink-0" />
-              <span className="tracking-tight font-medium">Download Android App</span>
-            </div>
-            <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
-              APK
-            </span>
-          </a>
-
           {/* Theme Switcher Toggle Button */}
           <button
             onClick={toggleTheme}
