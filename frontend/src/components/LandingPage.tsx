@@ -79,7 +79,7 @@ export const LandingPage: React.FC = () => {
         <section className="max-w-4xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-8 sm:pb-12 text-center">
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-[11px] sm:text-xs text-slate-700 dark:text-slate-300 mb-4 sm:mb-6 font-mono max-w-full">
             <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-            <span className="truncate sm:whitespace-normal">Autonomous Executive</span>
+            <span className="truncate sm:whitespace-normal">Autonomous Executive Assistant</span>
           </div>
 
           <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight px-1">
