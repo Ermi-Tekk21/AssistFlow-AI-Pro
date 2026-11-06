@@ -77,7 +77,7 @@ async function startServer(): Promise<void> {
         try {
           const response = await fetch(HEALTHCHECK_URL);
           console.log(
-            `Health check status: ${response.status}`,
+            `(-_-) --- Health check status: ${response.status}`,
             new Date().toISOString(),
           );
         } catch (error: any) {
