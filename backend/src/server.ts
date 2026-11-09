@@ -69,18 +69,31 @@ async function startServer(): Promise<void> {
       Number(process.env.HEALTHCHECK_INTERVAL_MS) || 895000;
 
     if (HEALTHCHECK_URL) {
-      setInterval(async () => {
+      console.log(
+        `[HealthCheckWorker] Keep-alive active: pinging ${HEALTHCHECK_URL} every ${HEALTHCHECK_INTERVAL_MS}ms`,
+      );
+
+      const runHealthCheck = async () => {
         try {
           const response = await fetch(HEALTHCHECK_URL);
-
           console.log(
-            `Health check status: ${response.status}`,
+            `(-_-) --- Health check status: ${response.status}`,
             new Date().toISOString(),
           );
         } catch (error: any) {
           console.error("Health check failed:", error.message);
         }
-      }, HEALTHCHECK_INTERVAL_MS);
+      };
+
+      // Perform an initial check 2 seconds after startup so you don't have to wait the full interval
+      setTimeout(runHealthCheck, 2000);
+
+      // Schedule periodic checks
+      setInterval(runHealthCheck, HEALTHCHECK_INTERVAL_MS);
+    } else {
+      console.log(
+        "[HealthCheckWorker] HEALTHCHECK_URL is not set. Self-ping keepalive is inactive.",
+      );
     }
   } catch (error: any) {
     console.error("Failed to start AssistFlow API:", error.message);
